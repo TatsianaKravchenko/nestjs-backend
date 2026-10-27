@@ -15,8 +15,14 @@ import { ConfigService } from '@/core/config/config.service';
 
         return [
           {
+            name: 'default',
             ttl,
             limit,
+          },
+          {
+            name: 'registration',
+            ttl: Number(config.get('REGISTRATION_THROTTLE_TTL')),
+            limit: Number(config.get('REGISTRATION_THROTTLE_LIMIT')),
           },
         ];
       },

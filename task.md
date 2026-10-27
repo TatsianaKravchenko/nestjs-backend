@@ -2,7 +2,7 @@
 
 ## 1. Auth, RBAC & User Management Module
 
-- [ ] 1.0 User Registration (`POST /auth/register`)
+- [x] 1.0 User Registration (`POST /auth/register`)
   - **Spec**: [1.0 Registration Spec](https://raw.githubusercontent.com/pavel-skripko-innowise/inno-fe-be-a1/main/1.0%20%D0%A0%D0%B5%D0%B3%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%86%D0%B8%D1%8F.md)
   - Password hashing (Argon2 / bcrypt), email confirmation via OTP/magic link, rate limiting, and HTTP response specs.
 

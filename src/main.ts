@@ -1,9 +1,16 @@
 import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import compression from '@fastify/compress';
 import fastifyCookie from '@fastify/cookie';
 import { ValidationPipe } from '@nestjs/common';
-import { initializeTransactionalContext, StorageDriver } from 'typeorm-transactional';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import {
+  initializeTransactionalContext,
+  StorageDriver,
+} from 'typeorm-transactional';
 
 import { AppModule } from './core/app/app.module';
 import { ConfigService } from '@/core/config/config.service';
@@ -13,7 +20,7 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter()
+    new FastifyAdapter(),
   );
 
   await app.register(compression);
@@ -38,6 +45,20 @@ async function bootstrap() {
 
   const configService = app.get(ConfigService);
 
+  // Interactive API docs; not exposed in production.
+  if (String(configService.get('NODE_ENV')) !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('NestJS Monolith API')
+      .setVersion('1.0')
+      .addCookieAuth('access_token')
+      .build();
+    SwaggerModule.setup(
+      'docs',
+      app,
+      SwaggerModule.createDocument(app, swaggerConfig),
+    );
+  }
+
   await app.register(fastifyCookie, {
     secret: configService.get('COOKIE_SECRET'),
   });
@@ -47,4 +68,4 @@ async function bootstrap() {
   await app.listen(port);
 }
 
-bootstrap();
+void bootstrap();

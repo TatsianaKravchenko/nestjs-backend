@@ -1,25 +1,49 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { App } from 'supertest/types';
+import { ValidationPipe } from '@nestjs/common';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
+import { Test } from '@nestjs/testing';
+import {
+  initializeTransactionalContext,
+  StorageDriver,
+} from 'typeorm-transactional';
+
 import { AppModule } from '../src/core/app/app.module';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+describe('App (e2e)', () => {
+  let app: NestFastifyApplication;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
+  beforeAll(async () => {
+    // Must run before the DatabaseModule registers its transactional DataSource.
+    initializeTransactionalContext({ storageDriver: StorageDriver.AUTO });
+
+    const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = moduleRef.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
+    );
+    app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
     await app.init();
+    await app.getHttpAdapter().getInstance().ready();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('boots with a live database connection and serves /health', async () => {
+    const res = await app.inject({ method: 'GET', url: '/health' });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ status: 'ok' });
+  });
+
+  it('returns 404 for unknown routes', async () => {
+    const res = await app.inject({ method: 'GET', url: '/does-not-exist' });
+
+    expect(res.statusCode).toBe(404);
   });
 });

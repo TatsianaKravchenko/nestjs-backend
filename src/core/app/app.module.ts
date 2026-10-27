@@ -6,10 +6,11 @@ import { HealthModule } from '@/core/health/health.module';
 import { ThrottlerModule } from '@/core/throttler/throttler.module';
 
 /**
- * 
+ *
  * Application modules
- * 
+ *
  */
+import { AuthModule } from '@/modules/auth/auth.module';
 import { UsersModule } from '@/modules/users/users.module';
 
 @Module({
@@ -19,11 +20,12 @@ import { UsersModule } from '@/modules/users/users.module';
     HealthModule,
     ThrottlerModule,
     /**
-     * 
+     *
      * Application modules
-     * 
+     *
      */
     UsersModule,
+    AuthModule,
   ],
 })
 export class AppModule {}

@@ -23,6 +23,31 @@ export const configValidationSchema = Joi.object<Config>({
   THROTTLE_GLOBAL_LIMIT: Joi.number().optional().default(10),
 
   /**
+   * Registration options
+   */
+  REGISTRATION_CONFIRMATION_ENABLED: Joi.boolean().optional().default(false),
+  REGISTRATION_CONFIRMATION_METHOD: Joi.string()
+    .valid('otp', 'magic_link')
+    .optional()
+    .default('otp'),
+  REGISTRATION_SECRET: Joi.string().min(16).required(),
+  REGISTRATION_MAGIC_LINK_URL: Joi.string()
+    .uri()
+    .optional()
+    .default('http://localhost:4200/auth/register/confirm'),
+  REGISTRATION_THROTTLE_TTL: Joi.number().optional().default(60000),
+  REGISTRATION_THROTTLE_LIMIT: Joi.number().optional().default(5),
+
+  /**
+   * SMTP options (used to deliver confirmation emails)
+   */
+  SMTP_HOST: Joi.string().allow('').optional(),
+  SMTP_PORT: Joi.number().port().optional().default(587),
+  SMTP_USER: Joi.string().allow('').optional(),
+  SMTP_PASSWORD: Joi.string().allow('').optional(),
+  SMTP_FROM: Joi.string().optional().default('no-reply@localhost'),
+
+  /**
    * PostgreSQL database options
    */
   POSTGRES_HOST: Joi.string().hostname().required(),
