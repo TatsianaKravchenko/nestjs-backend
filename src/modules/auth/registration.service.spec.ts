@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 
 import { ConfigService } from '@/core/config/config.service';
+import { DefaultRoleService } from '@/modules/rbac/default-role.service';
 import { User, UserStatus } from '@/modules/users/entities/user.entity';
 import { UsersService } from '@/modules/users/users.service';
 
@@ -27,7 +28,7 @@ interface Harness {
     sendRegistrationOtp: jest.Mock;
     sendRegistrationMagicLink: jest.Mock;
   };
-  usersRepo: { save: jest.Mock; create: jest.Mock };
+  defaultRole: { assign: jest.Mock };
   attemptsRepo: { findOne: jest.Mock; update: jest.Mock };
   usersService: { findByEmail: jest.Mock };
   manager: { create: jest.Mock; save: jest.Mock; findOne: jest.Mock };
@@ -51,10 +52,7 @@ function build(settings: Record<string, string> = {}): Harness {
   const dataSource = {
     transaction: jest.fn((cb: (m: unknown) => unknown) => cb(manager)),
   };
-  const usersRepo = {
-    create: jest.fn((data: object) => data),
-    save: jest.fn((data: object) => Promise.resolve({ id: 'user-1', ...data })),
-  };
+  const defaultRole = { assign: jest.fn().mockResolvedValue(undefined) };
   const attemptsRepo = { findOne: jest.fn(), update: jest.fn() };
   const usersService = { findByEmail: jest.fn().mockResolvedValue(null) };
   const passwords = {
@@ -68,14 +66,14 @@ function build(settings: Record<string, string> = {}): Harness {
 
   const service = new RegistrationService(
     dataSource as never,
-    usersRepo as never,
     attemptsRepo as never,
     usersService as unknown as UsersService,
     passwords as unknown as PasswordService,
     mail as unknown as MailService,
     config as unknown as ConfigService,
+    defaultRole as unknown as DefaultRoleService,
   );
-  return { service, mail, usersRepo, attemptsRepo, usersService, manager };
+  return { service, mail, defaultRole, attemptsRepo, usersService, manager };
 }
 
 describe('RegistrationService.register', () => {
@@ -94,12 +92,31 @@ describe('RegistrationService.register', () => {
       status: UserStatus.ACTIVE,
     });
     expect(JSON.stringify(result.body)).not.toContain('hash');
-    expect(h.usersRepo.create).toHaveBeenCalledWith({
+    expect(h.manager.create).toHaveBeenCalledWith(User, {
       email: 'a@b.co',
       passwordHash: '$argon2id$hashed',
       status: UserStatus.ACTIVE,
     });
+    expect(h.defaultRole.assign).toHaveBeenCalledWith(h.manager, 'user-1');
     expect(h.mail.sendRegistrationOtp).not.toHaveBeenCalled();
+  });
+
+  it('fails the registration when the default role cannot be granted', async () => {
+    const h = build();
+    const boom = new Error('rbac down');
+    h.defaultRole.assign.mockRejectedValue(boom);
+
+    await expect(
+      h.service.register({ email: 'a@b.co', password: 'abcdefg1' }),
+    ).rejects.toBe(boom);
+  });
+
+  it('does not grant a role to a pending user', async () => {
+    const h = build({ REGISTRATION_CONFIRMATION_ENABLED: 'true' });
+
+    await h.service.register({ email: 'a@b.co', password: 'abcdefg1' });
+
+    expect(h.defaultRole.assign).not.toHaveBeenCalled();
   });
 
   it('rejects an already registered email (409)', async () => {
@@ -113,7 +130,7 @@ describe('RegistrationService.register', () => {
 
   it('maps a unique-constraint race to 409', async () => {
     const h = build();
-    h.usersRepo.save.mockRejectedValue({ driverError: { code: '23505' } });
+    h.manager.save.mockRejectedValue({ driverError: { code: '23505' } });
 
     await expect(
       h.service.register({ email: 'a@b.co', password: 'abcdefg1' }),
@@ -123,7 +140,7 @@ describe('RegistrationService.register', () => {
   it('rethrows unexpected database errors', async () => {
     const h = build();
     const boom = new Error('db down');
-    h.usersRepo.save.mockRejectedValue(boom);
+    h.manager.save.mockRejectedValue(boom);
 
     await expect(
       h.service.register({ email: 'a@b.co', password: 'abcdefg1' }),
@@ -228,6 +245,17 @@ describe('RegistrationService.confirm', () => {
     });
     expect(attempt.consumedAt).toBeInstanceOf(Date);
     expect(user.status).toBe(UserStatus.ACTIVE);
+    expect(h.defaultRole.assign).toHaveBeenCalledWith(h.manager, 'user-1');
+  });
+
+  it('does not grant the default role on a wrong code', async () => {
+    const { h, code, attempt } = await otpAttempt();
+
+    await expect(
+      h.service.confirm({ attemptId: attempt.id, code: wrongCode(code) }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(h.defaultRole.assign).not.toHaveBeenCalled();
   });
 
   it('counts wrong codes and still accepts the 5th attempt', async () => {

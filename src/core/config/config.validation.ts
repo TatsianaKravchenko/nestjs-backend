@@ -39,6 +39,11 @@ export const configValidationSchema = Joi.object<Config>({
   REGISTRATION_THROTTLE_LIMIT: Joi.number().optional().default(5),
 
   /**
+   * RBAC options
+   */
+  RBAC_BOOTSTRAP_ADMIN_USER_ID: Joi.string().uuid().allow('').optional(),
+
+  /**
    * SMTP options (used to deliver confirmation emails)
    */
   SMTP_HOST: Joi.string().allow('').optional(),

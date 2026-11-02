@@ -6,8 +6,8 @@
   - **Spec**: [1.0 Registration Spec](https://raw.githubusercontent.com/pavel-skripko-innowise/inno-fe-be-a1/main/1.0%20%D0%A0%D0%B5%D0%B3%D0%B8%D1%81%D1%82%D1%80%D0%B0%D1%86%D0%B8%D1%8F.md)
   - Password hashing (Argon2 / bcrypt), email confirmation via OTP/magic link, rate limiting, and HTTP response specs.
 
-- [ ] 1.1 RBAC (Role-Based Access Control) Infrastructure
-  - **Spec**: [1.1 RBAC Spec](https://raw.githubusercontent.com/pavel-skripko-innowise/inno-fe-be-a1/main/1.1%20RBAC.md)
+- [x] 1.1 RBAC (Role-Based Access Control) Infrastructure
+  - **Spec**: [1.1 RBAC Spec](https://github.com/pavel-skripko-innowise/inno-fe-be-a1/blob/main/courses-content/A/1/1.1%20RBAC.md)
   - Policy snapshot, permissions management (`permission@action`), dynamic roles assignment.
 
 - [ ] 1.2 Authentication (`POST /auth/login`, `POST /auth/logout`, `POST /auth/refresh`)

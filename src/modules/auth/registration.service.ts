@@ -18,6 +18,7 @@ import {
 import { DataSource, LessThanOrEqual, Repository } from 'typeorm';
 
 import { ConfigService } from '@/core/config/config.service';
+import { DefaultRoleService } from '@/modules/rbac/default-role.service';
 import { User, UserStatus } from '@/modules/users/entities/user.entity';
 import { UsersService } from '@/modules/users/users.service';
 
@@ -65,13 +66,13 @@ export class RegistrationService {
 
   constructor(
     private readonly dataSource: DataSource,
-    @InjectRepository(User) private readonly users: Repository<User>,
     @InjectRepository(RegistrationAttempt)
     private readonly attempts: Repository<RegistrationAttempt>,
     private readonly usersService: UsersService,
     private readonly passwords: PasswordService,
     private readonly mail: MailService,
     private readonly config: ConfigService,
+    private readonly defaultRole: DefaultRoleService,
   ) {}
 
   async register(dto: RegisterDto): Promise<RegisterResult> {
@@ -85,11 +86,20 @@ export class RegistrationService {
     const passwordHash = await this.passwords.hash(dto.password);
 
     if (!this.confirmationEnabled()) {
-      const user = await this.insertUser(
-        email,
-        passwordHash,
-        UserStatus.ACTIVE,
-      );
+      // The user becomes active here, so the default role is granted atomically.
+      const user = await this.dataSource
+        .transaction(async (manager) => {
+          const created = await manager.save(
+            manager.create(User, {
+              email,
+              passwordHash,
+              status: UserStatus.ACTIVE,
+            }),
+          );
+          await this.defaultRole.assign(manager, created.id);
+          return created;
+        })
+        .catch((error: unknown) => this.rethrowDuplicate(error));
       this.logger.log(`User registered userId=${user.id}`);
       return {
         statusCode: HttpStatus.CREATED,
@@ -178,6 +188,7 @@ export class RegistrationService {
         user.status = UserStatus.ACTIVE;
         await manager.save(attempt);
         await manager.save(user);
+        await this.defaultRole.assign(manager, user.id);
         return { outcome: 'ok', user };
       },
     );
@@ -250,20 +261,6 @@ export class RegistrationService {
     await this.deliver(user.email, attempt.method, secret, attempt.id);
 
     return this.confirmationResponse(attempt);
-  }
-
-  private async insertUser(
-    email: string,
-    passwordHash: string,
-    status: UserStatus,
-  ): Promise<User> {
-    try {
-      return await this.users.save(
-        this.users.create({ email, passwordHash, status }),
-      );
-    } catch (error) {
-      return this.rethrowDuplicate(error);
-    }
   }
 
   /** A unique-constraint race maps to the regular duplicate error. */

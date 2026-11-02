@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ThrottlerModule } from '@/core/throttler/throttler.module';
+import { RbacModule } from '@/modules/rbac/rbac.module';
 import { UsersModule } from '@/modules/users/users.module';
 
 import { AuthController } from './auth.controller';
@@ -14,6 +15,7 @@ import { RegistrationService } from './registration.service';
   imports: [
     TypeOrmModule.forFeature([RegistrationAttempt]),
     UsersModule,
+    RbacModule,
     ThrottlerModule,
   ],
   controllers: [AuthController],

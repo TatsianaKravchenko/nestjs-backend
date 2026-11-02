@@ -29,6 +29,11 @@ export interface Config {
   REGISTRATION_THROTTLE_LIMIT?: number;
 
   /**
+   * RBAC options
+   */
+  RBAC_BOOTSTRAP_ADMIN_USER_ID?: string;
+
+  /**
    * SMTP options (used to deliver confirmation emails)
    */
   SMTP_HOST?: string;
