@@ -24,6 +24,16 @@ import { ConfigService } from '@/core/config/config.service';
             ttl: Number(config.get('REGISTRATION_THROTTLE_TTL')),
             limit: Number(config.get('REGISTRATION_THROTTLE_LIMIT')),
           },
+          {
+            name: 'login',
+            ttl: Number(config.get('LOGIN_THROTTLE_TTL')),
+            limit: Number(config.get('LOGIN_THROTTLE_LIMIT')),
+          },
+          {
+            name: 'refresh',
+            ttl: Number(config.get('REFRESH_THROTTLE_TTL')),
+            limit: Number(config.get('REFRESH_THROTTLE_LIMIT')),
+          },
         ];
       },
     }),

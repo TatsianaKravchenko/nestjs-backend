@@ -15,6 +15,14 @@ export class UsersService {
     return email.trim().toLowerCase();
   }
 
+  /** Only what an authentication check needs: the id and the status. */
+  findAuthState(id: string): Promise<Pick<User, 'id' | 'status'> | null> {
+    return this.users.findOne({
+      where: { id },
+      select: { id: true, status: true },
+    });
+  }
+
   findByEmail(email: string): Promise<User | null> {
     return this.users.findOne({
       where: { email: UsersService.normalizeEmail(email) },

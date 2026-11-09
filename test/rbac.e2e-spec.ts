@@ -13,7 +13,8 @@ import {
 
 import { AppModule } from '../src/core/app/app.module';
 import { ConfigService } from '../src/core/config/config.service';
-import { MailService } from '../src/modules/auth/mail.service';
+import { MailService } from '../src/modules/auth/services/mail.service';
+import { TokenService } from '../src/modules/auth/services/token.service';
 
 // Must not start with "e2e-": auth-registration.e2e-spec.ts deletes 'e2e-%' users in parallel.
 const PREFIX = 'rbac-spec';
@@ -26,10 +27,7 @@ type TestApp = NestFastifyApplication & { db: DataSource };
 
 let transactionalReady = false;
 
-/**
- * Authentication arrives with task 1.2, so the test injects the authenticated
- * user the way the future auth guard will: it sets `request.user`.
- */
+/** Requests authenticate with a real access token cookie, like a signed-in browser. */
 async function createApp(): Promise<TestApp> {
   if (!transactionalReady) {
     initializeTransactionalContext({ storageDriver: StorageDriver.AUTO });
@@ -58,16 +56,6 @@ async function createApp(): Promise<TestApp> {
     new FastifyAdapter(),
   ) as TestApp;
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
-  app
-    .getHttpAdapter()
-    .getInstance()
-    .addHook('onRequest', (request, _reply, done) => {
-      const id = request.headers['x-test-user'];
-      if (typeof id === 'string') {
-        (request as unknown as { user: { id: string } }).user = { id };
-      }
-      done();
-    });
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
   app.db = app.get(DataSource);
@@ -80,17 +68,20 @@ describe('RBAC admin API (e2e)', () => {
   let plainUserId: string;
   let adminRoleId: string;
 
-  const call = (
+  const call = async (
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     url: string,
     options: { user?: string; payload?: object } = {},
-  ) =>
-    app.inject({
-      method,
-      url,
-      payload: options.payload,
-      headers: options.user ? { 'x-test-user': options.user } : {},
-    });
+  ) => {
+    const headers: Record<string, string> = {};
+    if (options.user) {
+      const { access } = await app
+        .get(TokenService, { strict: false })
+        .issuePair(options.user);
+      headers.cookie = `access_token=${access}`;
+    }
+    return app.inject({ method, url, payload: options.payload, headers });
+  };
 
   const asAdmin = (
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
@@ -195,12 +186,36 @@ describe('RBAC admin API (e2e)', () => {
       expect(res.body).not.toMatch(/admin|role/i);
     });
 
-    it('denies a user that does not exist', async () => {
+    it('answers 401 for a valid token of a user that does not exist', async () => {
       const res = await call('GET', '/admin/rbac/roles', {
         user: '00000000-0000-4000-8000-0000000000ff',
       });
 
-      expect(res.statusCode).toBe(403);
+      expect(res.statusCode).toBe(401);
+      expect(res.json()).toMatchObject({ code: 'invalid_session' });
+    });
+
+    it('answers 401 for a garbage access token', async () => {
+      const res = await app.inject({
+        method: 'GET',
+        url: '/admin/rbac/roles',
+        headers: { cookie: 'access_token=not-a-jwt' },
+      });
+
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('answers 401 for a user who is no longer active', async () => {
+      await app.db.query("UPDATE users SET status = 'pending' WHERE id = $1", [
+        adminId,
+      ]);
+
+      const res = await asAdmin('GET', '/admin/rbac/roles');
+      await app.db.query("UPDATE users SET status = 'active' WHERE id = $1", [
+        adminId,
+      ]);
+
+      expect(res.statusCode).toBe(401);
     });
   });
 

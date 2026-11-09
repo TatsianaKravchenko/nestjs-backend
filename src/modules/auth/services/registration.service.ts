@@ -1,12 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  HttpException,
-  HttpStatus,
-  Injectable,
-  Logger,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   createHmac,
@@ -22,13 +14,21 @@ import { DefaultRoleService } from '@/modules/rbac/default-role.service';
 import { User, UserStatus } from '@/modules/users/entities/user.entity';
 import { UsersService } from '@/modules/users/users.service';
 
-import { ConfirmRegistrationDto } from './dto/confirm-registration.dto';
-import { RegisterDto } from './dto/register.dto';
-import { ResendRegistrationDto } from './dto/resend-registration.dto';
+import {
+  confirmationResendUnavailable,
+  emailAlreadyRegistered,
+  invalidConfirmation,
+  registrationAttemptsExhausted,
+  registrationDeliveryUnavailable,
+  registrationResendTooSoon,
+} from '../errors/auth.errors';
+import { ConfirmRegistrationDto } from '../dto/confirm-registration.dto';
+import { RegisterDto } from '../dto/register.dto';
+import { ResendRegistrationDto } from '../dto/resend-registration.dto';
 import {
   ConfirmationMethod,
   RegistrationAttempt,
-} from './entities/registration-attempt.entity';
+} from '../entities/registration-attempt.entity';
 import { MailService } from './mail.service';
 import { PasswordService } from './password.service';
 
@@ -58,8 +58,6 @@ export type RegisterResult =
 
 type ConfirmOutcome = 'ok' | 'invalid' | 'exhausted';
 
-const INVALID_CONFIRMATION = 'Invalid or expired confirmation';
-
 @Injectable()
 export class RegistrationService {
   private readonly logger = new Logger(RegistrationService.name);
@@ -80,7 +78,7 @@ export class RegistrationService {
 
     if (await this.usersService.findByEmail(email)) {
       this.logger.warn('Registration rejected: email already registered');
-      throw new ConflictException('Email is already registered');
+      throw emailAlreadyRegistered();
     }
 
     const passwordHash = await this.passwords.hash(dto.password);
@@ -195,14 +193,11 @@ export class RegistrationService {
 
     if (outcome.outcome === 'exhausted') {
       this.logger.warn('Registration confirmation: attempts exhausted');
-      throw new HttpException(
-        'Too many failed attempts. Request a new code.',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      throw registrationAttemptsExhausted();
     }
     if (outcome.outcome === 'invalid' || !outcome.user) {
       this.logger.warn('Registration confirmation failed');
-      throw new BadRequestException(INVALID_CONFIRMATION);
+      throw invalidConfirmation();
     }
 
     this.logger.log(`Registration confirmed userId=${outcome.user.id}`);
@@ -226,7 +221,7 @@ export class RegistrationService {
         : null;
 
     if (!user || !attempt) {
-      throw new BadRequestException('Registration cannot be resent');
+      throw confirmationResendUnavailable();
     }
 
     const now = new Date();
@@ -252,10 +247,7 @@ export class RegistrationService {
 
     if (!result.affected) {
       this.logger.warn(`Resend throttled attemptId=${attempt.id}`);
-      throw new HttpException(
-        `Resend is allowed once per ${RESEND_AFTER_SECONDS} seconds`,
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      throw registrationResendTooSoon(RESEND_AFTER_SECONDS);
     }
 
     await this.deliver(user.email, attempt.method, secret, attempt.id);
@@ -269,7 +261,7 @@ export class RegistrationService {
       ?.code;
     if (code === PG_UNIQUE_VIOLATION) {
       this.logger.warn('Registration rejected: unique constraint on email');
-      throw new ConflictException('Email is already registered');
+      throw emailAlreadyRegistered();
     }
     throw error;
   }
@@ -323,9 +315,7 @@ export class RegistrationService {
       this.logger.error(
         `Confirmation delivery failed attemptId=${attemptId}: ${(error as Error).message}`,
       );
-      throw new ServiceUnavailableException(
-        'Could not send the confirmation email. Use resend to try again.',
-      );
+      throw registrationDeliveryUnavailable();
     }
   }
 

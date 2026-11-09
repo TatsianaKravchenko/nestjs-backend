@@ -29,6 +29,27 @@ export interface Config {
   REGISTRATION_THROTTLE_LIMIT?: number;
 
   /**
+   * Authentication options
+   */
+  JWT_ACCESS_SECRET: string;
+  JWT_REFRESH_SECRET: string;
+  JWT_ISSUER: string;
+  JWT_AUDIENCE: string;
+  LOGIN_CHALLENGE_HMAC_KEY: string;
+  AUTH_LOG_PSEUDONYM_KEY: string;
+  LOGIN_EMAIL_CONFIRMATION_ENABLED?: boolean;
+  LOGIN_EMAIL_CONFIRMATION_METHOD?: 'otp' | 'magic_link';
+  LOGIN_MAGIC_LINK_URL?: string;
+  LOGIN_THROTTLE_TTL?: number;
+  LOGIN_THROTTLE_LIMIT?: number;
+  LOGIN_FAILURE_WINDOW_MS?: number;
+  LOGIN_FAILURE_LIMIT?: number;
+  REFRESH_THROTTLE_TTL?: number;
+  REFRESH_THROTTLE_LIMIT?: number;
+  AUTH_TRUSTED_ORIGIN?: string;
+  AUTH_COOKIE_CROSS_SITE?: boolean;
+
+  /**
    * RBAC options
    */
   RBAC_BOOTSTRAP_ADMIN_USER_ID?: string;

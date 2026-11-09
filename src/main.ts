@@ -14,6 +14,7 @@ import {
 
 import { AppModule } from './core/app/app.module';
 import { ConfigService } from '@/core/config/config.service';
+import { ProblemDetailsExceptionFilter } from '@/modules/auth/errors/problem-details-exception.filter';
 
 async function bootstrap() {
   initializeTransactionalContext({ storageDriver: StorageDriver.AUTO });
@@ -30,20 +31,25 @@ async function bootstrap() {
       whitelist: true,
     }),
   );
+  app.useGlobalFilters(new ProblemDetailsExceptionFilter());
 
+  const configService = app.get(ConfigService);
+
+  // Exact origins only: credentials are allowed, so a wildcard is never used.
+  const trustedOrigin = configService.get('AUTH_TRUSTED_ORIGIN');
   app.enableCors({
     origin: [
       'http://localhost:5174',
       'http://localhost:4200',
       'http://localhost:8080',
+      ...(trustedOrigin ? [trustedOrigin] : []),
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Protection'],
     credentials: true,
     preflightContinue: false,
     optionsSuccessStatus: 204,
   });
-
-  const configService = app.get(ConfigService);
 
   // Interactive API docs; not exposed in production.
   if (String(configService.get('NODE_ENV')) !== 'production') {

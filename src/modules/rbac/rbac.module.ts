@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { SessionModule } from '@/modules/auth/session.module';
+
 import { DefaultRoleService } from './default-role.service';
 import { Permission } from './entities/permission.entity';
 import { PolicyState } from './entities/policy-state.entity';
@@ -23,6 +25,7 @@ import { RbacGuard } from './rbac.guard';
       UserRole,
       PolicyState,
     ]),
+    SessionModule,
   ],
   controllers: [RbacAdminController],
   providers: [

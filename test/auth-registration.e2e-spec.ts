@@ -13,7 +13,7 @@ import {
 
 import { AppModule } from '../src/core/app/app.module';
 import { ConfigService } from '../src/core/config/config.service';
-import { MailService } from '../src/modules/auth/mail.service';
+import { MailService } from '../src/modules/auth/services/mail.service';
 
 interface SentMail {
   email: string;

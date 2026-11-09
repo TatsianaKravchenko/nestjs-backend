@@ -15,7 +15,7 @@ import { UsersService } from '@/modules/users/users.service';
 import {
   ConfirmationMethod,
   RegistrationAttempt,
-} from './entities/registration-attempt.entity';
+} from '../entities/registration-attempt.entity';
 import { MailService } from './mail.service';
 import { PasswordService } from './password.service';
 import { MAX_OTP_FAILURES, RegistrationService } from './registration.service';

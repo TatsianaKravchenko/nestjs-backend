@@ -25,6 +25,22 @@ export class MailService {
     );
   }
 
+  sendLoginOtp(email: string, code: string): Promise<void> {
+    return this.send(
+      email,
+      'Your sign-in code',
+      `Your sign-in code is ${code}. It expires in 10 minutes. If this was not you, ignore this email.`,
+    );
+  }
+
+  sendLoginMagicLink(email: string, link: string): Promise<void> {
+    return this.send(
+      email,
+      'Your sign-in link',
+      `Open this link to sign in: ${link}\nIt expires in 10 minutes and can be used once. If this was not you, ignore this email.`,
+    );
+  }
+
   private async send(to: string, subject: string, text: string): Promise<void> {
     const host = this.config.get('SMTP_HOST');
     if (!host) {

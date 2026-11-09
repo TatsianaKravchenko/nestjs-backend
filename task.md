@@ -10,9 +10,12 @@
   - **Spec**: [1.1 RBAC Spec](https://github.com/pavel-skripko-innowise/inno-fe-be-a1/blob/main/courses-content/A/1/1.1%20RBAC.md)
   - Policy snapshot, permissions management (`permission@action`), dynamic roles assignment.
 
-- [ ] 1.2 Authentication (`POST /auth/login`, `POST /auth/logout`, `POST /auth/refresh`)
+- [x] 1.2 Authentication (`POST /auth/login`, `POST /auth/logout`, `POST /auth/refresh`)
   - **Spec**: [1.2 Auth Spec](https://raw.githubusercontent.com/pavel-skripko-innowise/inno-fe-be-a1/main/1.2%20%D0%90%D1%83%D1%82%D0%B5%D0%BD%D1%82%D0%B8%D1%84%D0%B8%D0%BA%D0%B0%D1%86%D0%B8%D1%8F.md)
   - HttpOnly cookies issuance, JWT claims verification, session management.
+
+- [x] 1.2.1 Auth module organization and RFC 9457 Problem Details responses
+  - Organize auth code by responsibility, centralize auth errors, and serialize HTTP errors consistently.
 
 - [ ] 1.3 Authorization Guards & Middleware
   - **Spec**: [1.3 Authorization Spec](https://raw.githubusercontent.com/pavel-skripko-innowise/inno-fe-be-a1/main/1.3%20%D0%90%D0%B2%D1%82%D0%BE%D1%80%D0%B8%D0%B7%D0%B0%D1%86%D0%B8%D1%8F.md)
