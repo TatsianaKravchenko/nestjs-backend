@@ -55,6 +55,15 @@ export interface Config {
   RBAC_BOOTSTRAP_ADMIN_USER_ID?: string;
 
   /**
+   * User profile options
+   */
+  API_PUBLIC_URL?: string;
+  PROFILE_READ_WINDOW_MS?: number;
+  PROFILE_READ_OWN_LIMIT?: number;
+  PROFILE_READ_FOREIGN_LIMIT?: number;
+  PHOTO_STORAGE_DIR?: string;
+
+  /**
    * SMTP options (used to deliver confirmation emails)
    */
   SMTP_HOST?: string;

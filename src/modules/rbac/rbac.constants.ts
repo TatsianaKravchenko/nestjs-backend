@@ -2,7 +2,16 @@ export const RBAC_PERMISSION = 'rbac';
 export const RBAC_MANAGE_ACTION = 'manage';
 
 export const USERS_PERMISSION = 'users';
-export const USERS_ACTIONS = ['read', 'update', 'delete', 'list'];
+export const USERS_READ_ACTION = 'read';
+/** Read the profile and photo of another user. */
+export const USERS_READ_ANY_ACTION = 'read_any';
+export const USERS_ACTIONS = [
+  USERS_READ_ACTION,
+  USERS_READ_ANY_ACTION,
+  'update',
+  'delete',
+  'list',
+];
 
 export const DEFAULT_ROLE = 'user';
 export const ADMIN_ROLE = 'admin';

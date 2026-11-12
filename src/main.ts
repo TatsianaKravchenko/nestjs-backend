@@ -21,7 +21,9 @@ async function bootstrap() {
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter(),
+    // Fastify answers 404 for a path param over 100 chars; the profile routes
+    // accept 128 and must answer 400 above that, so the guard has to see them.
+    new FastifyAdapter({ routerOptions: { maxParamLength: 256 } }),
   );
 
   await app.register(compression);

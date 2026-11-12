@@ -131,3 +131,42 @@ describe('configValidationSchema (authentication)', () => {
     ).toBeUndefined();
   });
 });
+
+describe('configValidationSchema (user profile)', () => {
+  it('applies the profile defaults (120 own / 60 foreign per minute)', () => {
+    const { error, value } = validate(valid());
+
+    expect(error).toBeUndefined();
+    expect(value).toMatchObject({
+      PROFILE_READ_WINDOW_MS: 60000,
+      PROFILE_READ_OWN_LIMIT: 120,
+      PROFILE_READ_FOREIGN_LIMIT: 60,
+      PHOTO_STORAGE_DIR: './storage/photos',
+    });
+  });
+
+  it('accepts an http public url in development', () => {
+    expect(
+      validate({ ...valid(), API_PUBLIC_URL: 'http://localhost:3007' }).error,
+    ).toBeUndefined();
+  });
+
+  it('requires an https public url in production', () => {
+    const production = { ...valid(), NODE_ENV: 'production' };
+
+    expect(
+      validate({ ...production, API_PUBLIC_URL: 'http://api.example.com' })
+        .error,
+    ).toBeDefined();
+    expect(
+      validate({ ...production, API_PUBLIC_URL: 'https://api.example.com' })
+        .error,
+    ).toBeUndefined();
+  });
+
+  it('rejects a malformed public url', () => {
+    expect(
+      validate({ ...valid(), API_PUBLIC_URL: 'not a url' }).error,
+    ).toBeDefined();
+  });
+});

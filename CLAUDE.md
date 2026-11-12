@@ -10,7 +10,7 @@
 
 - ORM: TypeORM with PostgreSQL.
 - Database Changes: Whenever you modify or create entities (`*.entity.ts`), you MUST generate and apply a TypeORM migration using:
-  - Generate: `npm run migration:generate -- src/database/migrations/<MigrationName>`
+  - Generate: `npm run typeorm -- migration:generate src/database/migrations/<MigrationName> -d src/database/data-source.ts` (the `migration:generate` npm script already hardcodes a path, so passing another path to it fails with "Unknown argument")
   - Run: `npm run migration:run`
 
 ## Code Style & Standards

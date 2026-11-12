@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   HttpException,
   HttpStatus,
+  NotFoundException,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -17,6 +18,7 @@ export enum ApiErrorCode {
   InternalError = 'internal_error',
   InvalidRequest = 'invalid_request',
   Forbidden = 'forbidden',
+  NotFound = 'not_found',
   PermissionDenied = 'permission_denied',
   OwnershipDenied = 'ownership_denied',
   AuthorizationUnavailable = 'authorization_unavailable',
@@ -120,6 +122,22 @@ export const rateLimitExceeded = (): HttpException =>
       HttpStatus.TOO_MANY_REQUESTS,
       ApiErrorCode.RateLimitExceeded,
       'Too many failed attempts',
+    ),
+    HttpStatus.TOO_MANY_REQUESTS,
+  );
+
+export const notFound = (message = 'Not found'): NotFoundException =>
+  new NotFoundException(
+    response(HttpStatus.NOT_FOUND, ApiErrorCode.NotFound, message),
+  );
+
+export const requestRateLimited = (retryAfterSeconds: number): HttpException =>
+  new HttpException(
+    response(
+      HttpStatus.TOO_MANY_REQUESTS,
+      ApiErrorCode.RateLimitExceeded,
+      'Too many requests',
+      { retryAfterSeconds },
     ),
     HttpStatus.TOO_MANY_REQUESTS,
   );

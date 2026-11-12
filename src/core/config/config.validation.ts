@@ -95,6 +95,23 @@ export const configValidationSchema = Joi.object<Config>({
   RBAC_BOOTSTRAP_ADMIN_USER_ID: Joi.string().uuid().allow('').optional(),
 
   /**
+   * User profile options. `API_PUBLIC_URL` is the externally visible base URL
+   * used to build `photoUrl`; it must be HTTPS in production.
+   */
+  API_PUBLIC_URL: Joi.string()
+    .uri({ scheme: ['http', 'https'] })
+    .when('NODE_ENV', {
+      is: 'production',
+      then: Joi.string().uri({ scheme: ['https'] }),
+    })
+    .optional(),
+  PROFILE_READ_WINDOW_MS: Joi.number().optional().default(60000),
+  PROFILE_READ_OWN_LIMIT: Joi.number().optional().default(120),
+  PROFILE_READ_FOREIGN_LIMIT: Joi.number().optional().default(60),
+  /** Local filesystem photo storage: single-instance development only. */
+  PHOTO_STORAGE_DIR: Joi.string().optional().default('./storage/photos'),
+
+  /**
    * SMTP options (used to deliver confirmation emails)
    */
   SMTP_HOST: Joi.string().allow('').optional(),
