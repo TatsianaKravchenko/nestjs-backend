@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { TerminusModule } from '@nestjs/terminus';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { SessionModule } from '@/modules/auth/session.module';
@@ -14,6 +15,7 @@ import { RbacAdminController } from './rbac-admin.controller';
 import { RbacAdminService } from './rbac-admin.service';
 import { RbacAuditInterceptor } from './rbac-audit.interceptor';
 import { RbacBootstrapService } from './rbac-bootstrap.service';
+import { RbacPolicyHealthIndicator } from './rbac-policy.health';
 import { RbacGuard } from './rbac.guard';
 
 @Module({
@@ -26,6 +28,7 @@ import { RbacGuard } from './rbac.guard';
       PolicyState,
     ]),
     SessionModule,
+    TerminusModule,
   ],
   controllers: [RbacAdminController],
   providers: [
@@ -35,8 +38,14 @@ import { RbacGuard } from './rbac.guard';
     DefaultRoleService,
     RbacGuard,
     RbacAuditInterceptor,
+    RbacPolicyHealthIndicator,
   ],
   /** `RbacGuard` and the snapshot are exported so other modules can protect routes. */
-  exports: [PolicySnapshotService, RbacGuard, DefaultRoleService],
+  exports: [
+    PolicySnapshotService,
+    RbacGuard,
+    DefaultRoleService,
+    RbacPolicyHealthIndicator,
+  ],
 })
 export class RbacModule {}

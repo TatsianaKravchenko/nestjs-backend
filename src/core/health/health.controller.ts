@@ -24,4 +24,10 @@ export class HealthController {
 
     return this.healthService.checkHealth();
   }
+
+  @Get('ready')
+  @HealthCheck()
+  ready() {
+    return this.healthService.checkReadiness();
+  }
 }

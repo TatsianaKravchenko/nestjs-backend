@@ -41,6 +41,16 @@ describe('App (e2e)', () => {
     expect(res.json()).toMatchObject({ status: 'ok' });
   });
 
+  it('reports ready on /health/ready once the RBAC policy is loaded', async () => {
+    const res = await app.inject({ method: 'GET', url: '/health/ready' });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({
+      status: 'ok',
+      info: { rbac_policy: { status: 'up' } },
+    });
+  });
+
   it('returns 404 for unknown routes', async () => {
     const res = await app.inject({ method: 'GET', url: '/does-not-exist' });
 

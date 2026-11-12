@@ -10,6 +10,7 @@ describe('HealthController', () => {
   const healthService = {
     getEmptyResponse: jest.fn(),
     checkHealth: jest.fn(),
+    checkReadiness: jest.fn(),
   };
   const configService = { get: jest.fn() };
 
@@ -47,5 +48,13 @@ describe('HealthController', () => {
 
     await expect(controller.check()).resolves.toBe(result);
     expect(healthService.getEmptyResponse).not.toHaveBeenCalled();
+  });
+
+  it('delegates readiness to the health service regardless of the flag', async () => {
+    const result = { status: 'ok', info: {}, error: {}, details: {} };
+    healthService.checkReadiness.mockResolvedValue(result);
+
+    await expect(controller.ready()).resolves.toBe(result);
+    expect(configService.get).not.toHaveBeenCalled();
   });
 });
