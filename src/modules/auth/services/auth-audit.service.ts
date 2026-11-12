@@ -11,6 +11,20 @@ export interface RequestContext {
 type AuditFields = Record<string, string | number | boolean | undefined>;
 
 /**
+ * Defense in depth: a field whose name suggests a secret, credential, raw
+ * request data or a full role/permission list is dropped, never logged.
+ * `permission` (one server-declared name) stays; `permissions` does not.
+ */
+const SENSITIVE_FIELD =
+  /token|jwt|cookie|authorization|password|passwd|secret|hash|otp|key|body|headers|roles|permissions/i;
+
+export function redact(fields: AuditFields): AuditFields {
+  return Object.fromEntries(
+    Object.entries(fields).filter(([name]) => !SENSITIVE_FIELD.test(name)),
+  );
+}
+
+/**
  * Structured auth audit log. Callers pass only ids, categories and results:
  * never emails, passwords, OTPs, tokens, cookies or request bodies.
  */
@@ -29,14 +43,14 @@ export class AuthAuditService {
   }
 
   info(event: string, fields: AuditFields = {}): void {
-    this.logger.log({ event, ...fields });
+    this.logger.log({ event, ...redact(fields) });
   }
 
   warn(event: string, fields: AuditFields = {}): void {
-    this.logger.warn({ event, ...fields });
+    this.logger.warn({ event, ...redact(fields) });
   }
 
   error(event: string, fields: AuditFields = {}): void {
-    this.logger.error({ event, ...fields });
+    this.logger.error({ event, ...redact(fields) });
   }
 }

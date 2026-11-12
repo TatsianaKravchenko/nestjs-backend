@@ -266,6 +266,45 @@ describe('PolicySnapshotService unavailability', () => {
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
 
+  it('answers 503 when the reloaded snapshot is older than the stored version', async () => {
+    const { service, manager } = build();
+    // The version check sees 5, but the load only finds version 1.
+    manager.findOneBy.mockResolvedValueOnce({ id: 1, version: 5 });
+
+    await expect(
+      service.authorize('root', 'users', 'read'),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it('answers 503 when the version row disappears during the load', async () => {
+    const { service, manager } = build();
+    manager.findOneBy
+      .mockResolvedValueOnce({ id: 1, version: 1 })
+      .mockResolvedValueOnce(null);
+
+    await expect(
+      service.authorize('root', 'users', 'read'),
+    ).rejects.toBeInstanceOf(ServiceUnavailableException);
+  });
+
+  it('ignores grants that point to an unknown permission', async () => {
+    const policy = basePolicy();
+    policy.grants.push({
+      roleId: 'reader',
+      permissionId: 'p-ghost',
+      allActions: true,
+      actions: [],
+    });
+    const { service } = build(policy);
+
+    await expect(service.authorize('alice', 'users', 'read')).resolves.toBe(
+      true,
+    );
+    await expect(service.authorize('alice', 'ghost', 'read')).resolves.toBe(
+      false,
+    );
+  });
+
   it('answers 503 when the version row is missing', async () => {
     const { service, manager } = build();
     manager.findOneBy.mockResolvedValue(null);

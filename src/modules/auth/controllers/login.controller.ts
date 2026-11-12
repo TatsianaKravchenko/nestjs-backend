@@ -21,6 +21,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { RequestContext } from '../services/auth-audit.service';
 import { REFRESH_COOKIE } from '../constants/auth.constants';
 import { CookieService } from '../services/cookie.service';
+import { Public } from '../decorators/public.decorator';
 import { CsrfGuard } from '../guards/csrf.guard';
 import { PROBLEM_DETAILS_SCHEMA } from '../errors/auth.errors';
 import { ConfirmLoginDto } from '../dto/confirm-login.dto';
@@ -59,6 +60,7 @@ const context = (request: FastifyRequest): RequestContext => ({
   description: 'CSRF request rejected.',
   content: problemContent,
 })
+@Public()
 @Controller('auth')
 @UseGuards(CsrfGuard, ThrottlerGuard)
 @SkipThrottle({ default: true, registration: true })

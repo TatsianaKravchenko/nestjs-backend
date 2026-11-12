@@ -82,6 +82,52 @@ describe('RbacAuditInterceptor', () => {
     );
   });
 
+  it('uses the userId route param as the entity id', async () => {
+    const { interceptor, context, request } = build({
+      entityType: 'user-roles',
+      operation: 'replace',
+    });
+    request.params = { userId: 'user-9' } as never;
+
+    await lastValueFrom(interceptor.intercept(context, handler(of({}))));
+
+    expect(log).toHaveBeenCalledWith(
+      expect.objectContaining({ entityId: 'user-9' }),
+    );
+  });
+
+  it('uses the userId route param for a rejected write', async () => {
+    const { interceptor, context, request } = build(audit);
+    request.params = { userId: 'user-9' } as never;
+
+    await lastValueFrom(
+      interceptor.intercept(context, {
+        handle: () => throwError(() => new ConflictException()),
+      }),
+    ).catch(() => undefined);
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ entityId: 'user-9', status: 409 }),
+    );
+  });
+
+  it('logs an unexpected error as a 500 rejection and rethrows', async () => {
+    const { interceptor, context } = build(audit);
+    const error = new Error('boom');
+
+    await expect(
+      lastValueFrom(
+        interceptor.intercept(context, {
+          handle: () => throwError(() => error),
+        }),
+      ),
+    ).rejects.toBe(error);
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.objectContaining({ result: 'rejected', status: 500 }),
+    );
+  });
+
   it('logs a rejected write with its status and rethrows', async () => {
     const { interceptor, context } = build(audit);
     const error = new ConflictException('nope');

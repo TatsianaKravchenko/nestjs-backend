@@ -1,6 +1,7 @@
 import { applyDecorators, SetMetadata, UseGuards } from '@nestjs/common';
 
 import { AccessTokenGuard } from '@/modules/auth/guards/access-token.guard';
+import { CsrfGuard } from '@/modules/auth/guards/csrf.guard';
 
 import { AUDIT_KEY, REQUIRED_PERMISSION_KEY } from './rbac.constants';
 import { RbacGuard } from './rbac.guard';
@@ -18,7 +19,7 @@ export const RequirePermission = (permission: string, action: string) =>
       permission,
       action,
     } satisfies RequiredPermission),
-    UseGuards(AccessTokenGuard, RbacGuard),
+    UseGuards(AccessTokenGuard, CsrfGuard, RbacGuard),
   );
 
 /** Marks an admin write so the audit interceptor logs its outcome. */

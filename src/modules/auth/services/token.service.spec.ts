@@ -200,6 +200,13 @@ describe('TokenService', () => {
       expect(await reasonOf(service.verifyAccess(token))).toBe('expired');
     });
 
+    it('rejects a token that is not valid yet as claims', async () => {
+      const { service, jwt } = build();
+      const token = forge(jwt, { token_use: 'access' }, { notBefore: 3600 });
+
+      expect(await reasonOf(service.verifyAccess(token))).toBe('claims');
+    });
+
     it('accepts a token that expired within the 30 second tolerance', async () => {
       const { service, jwt } = build();
       const token = forge(jwt, { token_use: 'access' }, { expiresIn: -10 });

@@ -5,6 +5,7 @@ import { UsersService } from '@/modules/users/users.service';
 
 import { AuthAuditService, RequestContext } from './auth-audit.service';
 import {
+  authorizationUnavailable,
   invalidSession,
   serviceUnavailable,
   TokenFailureReason,
@@ -69,9 +70,13 @@ export class SessionService {
       user = await this.users.findAuthState(userId);
     } catch {
       this.audit.error('auth.database_unavailable', {
+        category: 'users',
+        status: 503,
         requestId: ctx?.requestId,
       });
-      throw serviceUnavailable();
+      throw failureEvent === 'access.rejected'
+        ? authorizationUnavailable()
+        : serviceUnavailable();
     }
 
     if (!user || user.status !== UserStatus.ACTIVE) {
@@ -86,7 +91,13 @@ export class SessionService {
     ctx?: Partial<RequestContext>,
     userId?: string,
   ): never {
-    this.audit.warn(event, { reason, userId, requestId: ctx?.requestId });
+    this.audit.warn(event, {
+      category: reason,
+      reason,
+      status: 401,
+      userId,
+      requestId: ctx?.requestId,
+    });
     throw invalidSession();
   }
 }

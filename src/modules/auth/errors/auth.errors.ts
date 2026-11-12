@@ -17,6 +17,9 @@ export enum ApiErrorCode {
   InternalError = 'internal_error',
   InvalidRequest = 'invalid_request',
   Forbidden = 'forbidden',
+  PermissionDenied = 'permission_denied',
+  OwnershipDenied = 'ownership_denied',
+  AuthorizationUnavailable = 'authorization_unavailable',
   ValidationError = 'validation_error',
   InvalidConfirmation = 'invalid_confirmation',
   ConfirmationUnavailable = 'confirmation_unavailable',
@@ -80,6 +83,34 @@ export const csrfRejected = (): ForbiddenException =>
       HttpStatus.FORBIDDEN,
       ApiErrorCode.CsrfRejected,
       'Request rejected',
+    ),
+  );
+
+export const permissionDenied = (): ForbiddenException =>
+  new ForbiddenException(
+    response(
+      HttpStatus.FORBIDDEN,
+      ApiErrorCode.PermissionDenied,
+      'Access denied',
+    ),
+  );
+
+export const ownershipDenied = (): ForbiddenException =>
+  new ForbiddenException(
+    response(
+      HttpStatus.FORBIDDEN,
+      ApiErrorCode.OwnershipDenied,
+      'Access denied',
+    ),
+  );
+
+/** The user store, policy snapshot or route configuration cannot be trusted: fail closed. */
+export const authorizationUnavailable = (): ServiceUnavailableException =>
+  new ServiceUnavailableException(
+    response(
+      HttpStatus.SERVICE_UNAVAILABLE,
+      ApiErrorCode.AuthorizationUnavailable,
+      'Authorization is temporarily unavailable',
     ),
   );
 

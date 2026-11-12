@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ThrottlerModule } from '@/core/throttler/throttler.module';
 import { RbacModule } from '@/modules/rbac/rbac.module';
 import { UsersModule } from '@/modules/users/users.module';
 
+import { RouteDeclarationValidator } from './authorization/route-declaration.validator';
 import { AuthController } from './controllers/auth.controller';
 import { CsrfGuard } from './guards/csrf.guard';
 import { LoginAttempt } from './entities/login-attempt.entity';
@@ -24,6 +26,7 @@ import { SessionModule } from './session.module';
     RbacModule,
     SessionModule,
     ThrottlerModule,
+    DiscoveryModule,
   ],
   controllers: [AuthController, LoginController],
   providers: [
@@ -31,6 +34,7 @@ import { SessionModule } from './session.module';
     LoginService,
     LoginFailureLimiter,
     CsrfGuard,
+    RouteDeclarationValidator,
     PasswordService,
     MailService,
   ],

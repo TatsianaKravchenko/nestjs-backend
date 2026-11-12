@@ -71,6 +71,8 @@ describe('SessionService.authenticate', () => {
       });
       expect(users.findAuthState).not.toHaveBeenCalled();
       expect(audit.warn).toHaveBeenCalledWith('access.rejected', {
+        category: reason,
+        status: 401,
         reason,
         userId: undefined,
         requestId: 'req-1',
@@ -97,6 +99,15 @@ describe('SessionService.authenticate', () => {
       'access.rejected',
       expect.objectContaining({ reason: 'user_inactive' }),
     );
+  });
+
+  it('rethrows an unexpected verification error instead of answering 401', async () => {
+    const { service, tokens, users } = build();
+    const unexpected = new Error('boom');
+    tokens.verifyAccess.mockRejectedValue(unexpected);
+
+    await expect(service.authenticate('token', ctx)).rejects.toBe(unexpected);
+    expect(users.findAuthState).not.toHaveBeenCalled();
   });
 
   it('answers 503, not 401, when the database is unavailable', async () => {

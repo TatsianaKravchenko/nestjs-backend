@@ -1,11 +1,18 @@
 import { ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 
 import { ConfigService } from '@/core/config/config.service';
 
+import { RECEIPT_HEADER_KEY } from '../decorators/receipt.decorator';
 import { AuthAuditService } from '../services/auth-audit.service';
 import { CsrfGuard } from './csrf.guard';
 
 const TRUSTED = 'https://app.example.com';
+
+class SampleController {
+  handler(): void {}
+}
+const handler = (SampleController.prototype as { handler: () => void }).handler;
 
 function build(trusted = TRUSTED) {
   const config = { get: () => trusted };
@@ -13,6 +20,7 @@ function build(trusted = TRUSTED) {
   const guard = new CsrfGuard(
     config as unknown as ConfigService,
     audit as unknown as AuthAuditService,
+    new Reflector(),
   );
   return { guard, audit };
 }
@@ -28,11 +36,41 @@ function contextFor(
     headers: { host: 'api.example.com', ...headers },
   };
   return {
+    getHandler: () => handler,
+    getClass: () => SampleController,
     switchToHttp: () => ({ getRequest: () => request }),
   } as unknown as ExecutionContext;
 }
 
 describe('CsrfGuard', () => {
+  describe('receipt-guarded route', () => {
+    afterEach(() =>
+      Reflect.defineMetadata(RECEIPT_HEADER_KEY, undefined, handler),
+    );
+    const crossOrigin = { origin: 'https://evil.test' };
+
+    it('skips the check when the receipt header is present', () => {
+      Reflect.defineMetadata(RECEIPT_HEADER_KEY, 'deletion-receipt', handler);
+      const { guard, audit } = build();
+
+      expect(
+        guard.canActivate(
+          contextFor('DELETE', { ...crossOrigin, 'deletion-receipt': 'abc' }),
+        ),
+      ).toBe(true);
+      expect(audit.warn).not.toHaveBeenCalled();
+    });
+
+    it('still enforces CSRF when the receipt header is absent', () => {
+      Reflect.defineMetadata(RECEIPT_HEADER_KEY, 'deletion-receipt', handler);
+      const { guard } = build();
+
+      expect(() =>
+        guard.canActivate(contextFor('DELETE', crossOrigin)),
+      ).toThrow(ForbiddenException);
+    });
+  });
+
   it('lets safe methods through', () => {
     const { guard } = build();
 

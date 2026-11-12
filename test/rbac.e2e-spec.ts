@@ -186,6 +186,43 @@ describe('RBAC admin API (e2e)', () => {
       expect(res.body).not.toMatch(/admin|role/i);
     });
 
+    it('answers 403 permission_denied for an active user without the permission', async () => {
+      const res = await call('GET', '/admin/rbac/roles', { user: plainUserId });
+
+      expect(res.statusCode).toBe(403);
+      expect(res.json()).toMatchObject({ code: 'permission_denied' });
+    });
+
+    it('rejects a cross-origin write without the CSRF header, before RBAC', async () => {
+      const { access } = await app
+        .get(TokenService, { strict: false })
+        .issuePair(adminId);
+      const res = await app.inject({
+        method: 'POST',
+        url: '/admin/rbac/roles',
+        payload: {},
+        headers: {
+          cookie: `access_token=${access}`,
+          origin: 'https://evil.example',
+        },
+      });
+
+      expect(res.statusCode).toBe(403);
+      expect(res.json()).toMatchObject({ code: 'csrf_rejected' });
+    });
+
+    it('answers 401 for an inactive user holding a valid token', async () => {
+      const blocked = await createUser('inactive');
+      await app.db.query(`UPDATE users SET status = 'pending' WHERE id = $1`, [
+        blocked,
+      ]);
+
+      const res = await call('GET', '/admin/rbac/roles', { user: blocked });
+
+      expect(res.statusCode).toBe(401);
+      expect(res.json()).toMatchObject({ code: 'invalid_session' });
+    });
+
     it('answers 401 for a valid token of a user that does not exist', async () => {
       const res = await call('GET', '/admin/rbac/roles', {
         user: '00000000-0000-4000-8000-0000000000ff',

@@ -18,6 +18,7 @@ import {
 import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
 import type { FastifyReply } from 'fastify';
 
+import { Public } from '../decorators/public.decorator';
 import { PROBLEM_DETAILS_SCHEMA } from '../errors/auth.errors';
 import { ConfirmRegistrationDto } from '../dto/confirm-registration.dto';
 import { RegisterDto } from '../dto/register.dto';
@@ -43,6 +44,7 @@ const problemContent = {
   description: 'Rate limit exceeded.',
   content: problemContent,
 })
+@Public()
 @Controller('auth')
 @UseGuards(ThrottlerGuard)
 @SkipThrottle({ default: true, login: true, refresh: true })

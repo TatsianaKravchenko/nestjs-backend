@@ -1,10 +1,7 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleInit,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+
+import { authorizationUnavailable } from '@/modules/auth/errors/auth.errors';
 
 import { Permission } from './entities/permission.entity';
 import { PolicyState } from './entities/policy-state.entity';
@@ -27,8 +24,6 @@ export interface PolicySnapshot {
   /** user id -> role ids */
   userRoles: Map<string, string[]>;
 }
-
-const UNAVAILABLE = 'Authorization policy is temporarily unavailable';
 
 /**
  * In-memory copy of the policy. The database stays the source of truth: every
@@ -96,7 +91,13 @@ export class PolicySnapshotService implements OnModuleInit {
     if (this.snapshot && this.snapshot.version >= version) {
       return this.snapshot;
     }
-    throw new ServiceUnavailableException(UNAVAILABLE);
+    this.logger.error({
+      event: 'rbac.policy.stale',
+      category: 'rbac_snapshot',
+      status: 503,
+      policyVersion: version,
+    });
+    throw authorizationUnavailable();
   }
 
   private async readVersion(): Promise<number> {
@@ -111,9 +112,11 @@ export class PolicySnapshotService implements OnModuleInit {
     } catch (error) {
       this.logger.error({
         event: 'rbac.policy.version_read_failed',
+        category: 'rbac_version',
+        status: 503,
         error: (error as Error).message,
       });
-      throw new ServiceUnavailableException(UNAVAILABLE);
+      throw authorizationUnavailable();
     }
   }
 
@@ -152,9 +155,11 @@ export class PolicySnapshotService implements OnModuleInit {
       this.snapshot = null;
       this.logger.error({
         event: 'rbac.policy.reload_failed',
+        category: 'rbac_snapshot',
+        status: 503,
         error: (error as Error).message,
       });
-      throw new ServiceUnavailableException(UNAVAILABLE);
+      throw authorizationUnavailable();
     }
   }
 
