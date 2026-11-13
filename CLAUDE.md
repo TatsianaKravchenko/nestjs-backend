@@ -5,6 +5,7 @@
 - Framework: NestJS (TypeScript).
 - Feature Modules: Place all new business modules inside `src/modules/<module-name>/`.
 - Core Infrastructure: Core configurations, shared services, and global modules live in `src/core/`.
+- Module Layout: Any new NestJS module or major feature must organize its files into role-based subdirectories (`controllers/`, `services/`, `guards/`, `pipes/`, `dto/`, `entities/`, `health/`, `utils/`), creating only the ones it needs. Co-locate each `.spec.ts` next to the file it tests, and keep only the `.module.ts` file at the module root.
 
 ## Database & Migrations
 
