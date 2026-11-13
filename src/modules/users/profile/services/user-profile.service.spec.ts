@@ -5,9 +5,9 @@ import { Readable } from 'stream';
 import { ConfigService } from '@/core/config/config.service';
 import { AuthAuditService } from '@/modules/auth/services/auth-audit.service';
 
-import { UserStatus } from '../entities/user.entity';
-import type { PhotoStorage } from '../storage/photo-storage';
-import { UsersService } from '../users.service';
+import { UserStatus } from '../../entities/user.entity';
+import type { PhotoStorage } from '../../storage/photo-storage';
+import { UsersService } from '../../users.service';
 import { UserProfileService } from './user-profile.service';
 
 const ACTOR = 'actor-1';
@@ -44,6 +44,9 @@ function setup(env: Record<string, string> = {}) {
       status: 'found',
       stream: Readable.from(['bytes']),
     }),
+    write: jest.fn(),
+    delete: jest.fn(),
+    listOlderThan: jest.fn(),
   };
   const service = new UserProfileService(
     users as unknown as UsersService,

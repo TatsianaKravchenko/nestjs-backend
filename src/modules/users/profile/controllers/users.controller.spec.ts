@@ -10,9 +10,9 @@ import { REQUIRED_PERMISSION_KEY } from '@/modules/rbac/rbac.constants';
 import { RbacGuard } from '@/modules/rbac/rbac.guard';
 import type { RbacRequest } from '@/modules/rbac/rbac.types';
 
-import { ProfileAccessGuard } from './profile-access.guard';
-import { UserIdFormatGuard } from './user-id-format.guard';
-import { UserProfileService } from './user-profile.service';
+import { ProfileAccessGuard } from '../guards/profile-access.guard';
+import { UserIdFormatGuard } from '../guards/user-id-format.guard';
+import { UserProfileService } from '../services/user-profile.service';
 import { UsersController } from './users.controller';
 
 const request = {

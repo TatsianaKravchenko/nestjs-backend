@@ -13,6 +13,7 @@ import {
 } from 'typeorm-transactional';
 
 import { AppModule } from './core/app/app.module';
+import { setupHttp } from './core/http/http-setup';
 import { ConfigService } from '@/core/config/config.service';
 import { ProblemDetailsExceptionFilter } from '@/modules/auth/errors/problem-details-exception.filter';
 
@@ -27,6 +28,7 @@ async function bootstrap() {
   );
 
   await app.register(compression);
+  await setupHttp(app);
 
   app.useGlobalPipes(
     new ValidationPipe({

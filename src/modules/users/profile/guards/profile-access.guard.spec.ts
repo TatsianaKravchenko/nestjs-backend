@@ -11,7 +11,7 @@ import { AuthAuditService } from '@/modules/auth/services/auth-audit.service';
 import { PolicySnapshotService } from '@/modules/rbac/policy-snapshot.service';
 
 import { ProfileAccessGuard } from './profile-access.guard';
-import { ProfileRateLimiter } from './profile-rate-limiter.service';
+import { ProfileRateLimiter } from '../services/profile-rate-limiter.service';
 
 class FakeController {
   getProfile(): void {}

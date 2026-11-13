@@ -12,6 +12,7 @@ const valid = () => ({
   JWT_REFRESH_SECRET: key('b'),
   LOGIN_CHALLENGE_HMAC_KEY: key('c'),
   AUTH_LOG_PSEUDONYM_KEY: key('d'),
+  EMAIL_CHANGE_HMAC_KEY: key('e'),
   JWT_ISSUER: 'issuer',
   JWT_AUDIENCE: 'audience',
   POSTGRES_HOST: 'localhost',
@@ -29,6 +30,7 @@ const KEYS = [
   'JWT_REFRESH_SECRET',
   'LOGIN_CHALLENGE_HMAC_KEY',
   'AUTH_LOG_PSEUDONYM_KEY',
+  'EMAIL_CHANGE_HMAC_KEY',
 ] as const;
 
 describe('configValidationSchema (authentication)', () => {
@@ -168,5 +170,36 @@ describe('configValidationSchema (user profile)', () => {
     expect(
       validate({ ...valid(), API_PUBLIC_URL: 'not a url' }).error,
     ).toBeDefined();
+  });
+});
+
+describe('configValidationSchema (email change and storage cleanup)', () => {
+  it('applies the defaults (otp, 5 emails per hour, 30 mutations per hour)', () => {
+    const { error, value } = validate(valid());
+
+    expect(error).toBeUndefined();
+    expect(value).toMatchObject({
+      EMAIL_CHANGE_METHOD: 'otp',
+      EMAIL_CHANGE_HOURLY_LIMIT: 5,
+      EMAIL_CHANGE_WINDOW_MS: 3600000,
+      PROFILE_MUTATION_LIMIT: 30,
+      PROFILE_MUTATION_WINDOW_MS: 3600000,
+      STORAGE_CLEANUP_WORKER_ENABLED: true,
+    });
+  });
+
+  it('refuses an email change key equal to another key', () => {
+    expect(
+      validate({ ...valid(), EMAIL_CHANGE_HMAC_KEY: key('a') }).error?.message,
+    ).toContain('must all be different');
+  });
+
+  it('only accepts otp or magic_link as the email change method', () => {
+    expect(
+      validate({ ...valid(), EMAIL_CHANGE_METHOD: 'sms' }).error,
+    ).toBeDefined();
+    expect(
+      validate({ ...valid(), EMAIL_CHANGE_METHOD: 'magic_link' }).error,
+    ).toBeUndefined();
   });
 });

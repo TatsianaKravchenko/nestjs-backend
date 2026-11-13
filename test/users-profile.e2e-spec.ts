@@ -104,6 +104,12 @@ describe('User profile read (e2e)', () => {
       roles?: string[];
     } = {},
   ): Promise<string> {
+    // `users.photo_key` is unique: each user gets its own copy of the fixture object.
+    let photoKey = options.photoKey ?? null;
+    if (photoKey === PHOTO_KEY) {
+      photoKey = `${unique('photo')}-${PHOTO_KEY}`;
+      await writeFile(join(storageDir, photoKey), PHOTO_BYTES);
+    }
     const rows: { id: string }[] = await app.db.query(
       `INSERT INTO users (email, password_hash, status, display_name, photo_key)
        VALUES ($1, $2, $3, $4, $5) RETURNING id`,
@@ -112,7 +118,7 @@ describe('User profile read (e2e)', () => {
         SECRET_HASH,
         options.status ?? 'active',
         options.displayName === undefined ? 'Jane Doe' : options.displayName,
-        options.photoKey === undefined ? null : options.photoKey,
+        photoKey,
       ],
     );
     for (const roleId of options.roles ?? []) {

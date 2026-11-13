@@ -5,11 +5,17 @@ export const USERS_PERMISSION = 'users';
 export const USERS_READ_ACTION = 'read';
 /** Read the profile and photo of another user. */
 export const USERS_READ_ANY_ACTION = 'read_any';
+/** Change the own profile (display name, photo, email challenge). */
+export const USERS_UPDATE_ACTION = 'update';
+/** Additionally required to change another user or to set an email directly. */
+export const USERS_UPDATE_ANY_ACTION = 'update_any';
 export const USERS_ACTIONS = [
   USERS_READ_ACTION,
   USERS_READ_ANY_ACTION,
-  'update',
+  USERS_UPDATE_ACTION,
+  USERS_UPDATE_ANY_ACTION,
   'delete',
+  'delete_any',
   'list',
 ];
 

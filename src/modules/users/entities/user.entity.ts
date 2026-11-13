@@ -1,7 +1,9 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -17,6 +19,10 @@ export enum UserStatus {
 }
 
 @Entity('users')
+@Check(
+  'CHK_users_display_name',
+  `"display_name" IS NULL OR ("display_name" IS NFC NORMALIZED AND char_length("display_name") BETWEEN 1 AND 80)`,
+)
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -36,12 +42,13 @@ export class User {
   @Column({
     name: 'display_name',
     type: 'varchar',
-    length: 320,
+    length: 80,
     nullable: true,
   })
   displayName!: string | null;
 
   /** Internal object-storage key of the photo. Never leaves the service. */
+  @Index('UQ_users_photo_key', { unique: true })
   @Column({ name: 'photo_key', type: 'varchar', length: 512, nullable: true })
   photoKey!: string | null;
 

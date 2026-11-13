@@ -8,10 +8,10 @@ import {
 } from '@/modules/auth/errors/auth.errors';
 import { AuthAuditService } from '@/modules/auth/services/auth-audit.service';
 
-import { UserProfileDto } from '../dto/user-profile.dto';
-import { PHOTO_STORAGE, type PhotoStorage } from '../storage/photo-storage';
-import { hasServablePhoto, toUserProfile } from '../user-profile.projector';
-import { UsersService } from '../users.service';
+import { UserProfileDto } from '../../dto/user-profile.dto';
+import { PHOTO_STORAGE, type PhotoStorage } from '../../storage/photo-storage';
+import { hasServablePhoto, toUserProfile } from '../../user-profile.projector';
+import { UsersService } from '../../users.service';
 import type { ProfileScope } from './profile-rate-limiter.service';
 
 export interface ReadContext {

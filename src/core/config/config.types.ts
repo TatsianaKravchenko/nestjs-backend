@@ -62,6 +62,24 @@ export interface Config {
   PROFILE_READ_OWN_LIMIT?: number;
   PROFILE_READ_FOREIGN_LIMIT?: number;
   PHOTO_STORAGE_DIR?: string;
+  PROFILE_MUTATION_WINDOW_MS?: number;
+  PROFILE_MUTATION_LIMIT?: number;
+
+  /**
+   * Email change options
+   */
+  EMAIL_CHANGE_HMAC_KEY: string;
+  EMAIL_CHANGE_METHOD?: 'otp' | 'magic_link';
+  EMAIL_CHANGE_MAGIC_LINK_URL?: string;
+  EMAIL_CHANGE_WINDOW_MS?: number;
+  EMAIL_CHANGE_HOURLY_LIMIT?: number;
+
+  /**
+   * Storage cleanup worker options
+   */
+  STORAGE_CLEANUP_WORKER_ENABLED?: boolean;
+  STORAGE_CLEANUP_INTERVAL_MS?: number;
+  STORAGE_ORPHAN_SWEEP_INTERVAL_MS?: number;
 
   /**
    * SMTP options (used to deliver confirmation emails)

@@ -13,7 +13,7 @@ import {
 } from '@/modules/rbac/rbac.constants';
 import type { RbacRequest } from '@/modules/rbac/rbac.types';
 
-import { ProfileRateLimiter } from './profile-rate-limiter.service';
+import { ProfileRateLimiter } from '../services/profile-rate-limiter.service';
 
 /**
  * Runs after `users@read` (RbacGuard) and before the handler, so nothing about

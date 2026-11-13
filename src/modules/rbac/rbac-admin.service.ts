@@ -19,6 +19,7 @@ import { RoleGrant } from './entities/role-grant.entity';
 import { Role } from './entities/role.entity';
 import { UserRole } from './entities/user-role.entity';
 import { PolicySnapshotService } from './policy-snapshot.service';
+import { hasActiveManageHolder } from './rbac-invariant';
 import { bumpPolicyVersion, lockPolicyVersion } from './policy-version';
 import { RBAC_MANAGE_ACTION, RBAC_PERMISSION } from './rbac.constants';
 import { normalizeDescription } from './rbac.utils';
@@ -335,17 +336,8 @@ export class RbacAdminService {
     return new ServiceUnavailableException('Storage is unavailable');
   }
 
-  private async hasManageHolder(manager: EntityManager): Promise<boolean> {
-    const rows: unknown[] = await manager.query(
-      `SELECT 1 FROM user_roles ur
-         JOIN role_grants g ON g.role_id = ur.role_id
-         JOIN permissions p ON p.id = g.permission_id
-        WHERE p.name = $1 AND $2 = ANY (p.actions)
-          AND (g.all_actions OR $2 = ANY (g.actions))
-        LIMIT 1`,
-      [RBAC_PERMISSION, RBAC_MANAGE_ACTION],
-    );
-    return rows.length > 0;
+  private hasManageHolder(manager: EntityManager): Promise<boolean> {
+    return hasActiveManageHolder(manager);
   }
 
   private async requireRole(manager: EntityManager, id: string): Promise<Role> {

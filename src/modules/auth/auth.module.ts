@@ -38,6 +38,6 @@ import { SessionModule } from './session.module';
     PasswordService,
     MailService,
   ],
-  exports: [PasswordService, SessionModule],
+  exports: [PasswordService, SessionModule, MailService],
 })
 export class AuthModule {}

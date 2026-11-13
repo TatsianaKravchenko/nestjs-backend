@@ -26,10 +26,13 @@ import {
 } from '@/modules/rbac/rbac.constants';
 import type { RbacRequest } from '@/modules/rbac/rbac.types';
 
-import { UserProfileDto } from '../dto/user-profile.dto';
-import { ProfileAccessGuard } from './profile-access.guard';
-import { UserIdFormatGuard } from './user-id-format.guard';
-import { ReadContext, UserProfileService } from './user-profile.service';
+import { UserProfileDto } from '../../dto/user-profile.dto';
+import { ProfileAccessGuard } from '../guards/profile-access.guard';
+import { UserIdFormatGuard } from '../guards/user-id-format.guard';
+import {
+  ReadContext,
+  UserProfileService,
+} from '../services/user-profile.service';
 
 const problem = (status: number, description: string) =>
   ApiResponse({

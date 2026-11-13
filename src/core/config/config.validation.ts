@@ -8,6 +8,7 @@ const DISTINCT_KEYS = [
   'JWT_REFRESH_SECRET',
   'LOGIN_CHALLENGE_HMAC_KEY',
   'AUTH_LOG_PSEUDONYM_KEY',
+  'EMAIL_CHANGE_HMAC_KEY',
 ] as const;
 
 const strongKey = () =>
@@ -110,6 +111,35 @@ export const configValidationSchema = Joi.object<Config>({
   PROFILE_READ_FOREIGN_LIMIT: Joi.number().optional().default(60),
   /** Local filesystem photo storage: single-instance development only. */
   PHOTO_STORAGE_DIR: Joi.string().optional().default('./storage/photos'),
+  /** Profile and photo mutations per user and window (30 per hour). */
+  PROFILE_MUTATION_WINDOW_MS: Joi.number().optional().default(3600000),
+  PROFILE_MUTATION_LIMIT: Joi.number().optional().default(30),
+
+  /**
+   * Email change options. The HMAC key is separate from every other key.
+   */
+  EMAIL_CHANGE_HMAC_KEY: strongKey(),
+  EMAIL_CHANGE_METHOD: Joi.string()
+    .valid('otp', 'magic_link')
+    .optional()
+    .default('otp'),
+  EMAIL_CHANGE_MAGIC_LINK_URL: Joi.string()
+    .uri()
+    .optional()
+    .default('http://localhost:4200/profile/email-change/confirm'),
+  /** At most this many emails per user and window (5 per hour). */
+  EMAIL_CHANGE_WINDOW_MS: Joi.number().optional().default(3600000),
+  EMAIL_CHANGE_HOURLY_LIMIT: Joi.number().optional().default(5),
+
+  /**
+   * Storage cleanup worker: deletes objects of replaced or cleared photos and
+   * sweeps unreferenced objects older than one hour.
+   */
+  STORAGE_CLEANUP_WORKER_ENABLED: Joi.boolean().optional().default(true),
+  STORAGE_CLEANUP_INTERVAL_MS: Joi.number().optional().default(15000),
+  STORAGE_ORPHAN_SWEEP_INTERVAL_MS: Joi.number()
+    .optional()
+    .default(15 * 60 * 1000),
 
   /**
    * SMTP options (used to deliver confirmation emails)

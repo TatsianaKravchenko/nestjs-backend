@@ -3,6 +3,8 @@ import {
   ConflictException,
   ForbiddenException,
   HttpException,
+  PayloadTooLargeException,
+  UnsupportedMediaTypeException,
   HttpStatus,
   NotFoundException,
   ServiceUnavailableException,
@@ -28,6 +30,14 @@ export enum ApiErrorCode {
   ConfirmationResendUnavailable = 'confirmation_resend_unavailable',
   EmailAlreadyRegistered = 'email_already_registered',
   LoginResendUnavailable = 'login_resend_unavailable',
+  EmailInUse = 'email_in_use',
+  UserStateConflict = 'user_state_conflict',
+  EmailChangeConflict = 'email_change_conflict',
+  LastAccessManager = 'last_access_manager',
+  PayloadTooLarge = 'payload_too_large',
+  UnsupportedMediaType = 'unsupported_media_type',
+  InvalidImage = 'invalid_image',
+  EmailChangeUnavailable = 'email_change_unavailable',
 }
 
 export const TokenFailureReason = {
@@ -246,6 +256,66 @@ export const registrationAttemptsExhausted = (): HttpException =>
     ),
     HttpStatus.TOO_MANY_REQUESTS,
   );
+
+/** 409 with a stable machine-readable code. */
+export const conflict = (
+  code: ApiErrorCode,
+  message: string,
+): ConflictException =>
+  new ConflictException(response(HttpStatus.CONFLICT, code, message));
+
+export const emailInUse = (): ConflictException =>
+  conflict(ApiErrorCode.EmailInUse, 'Email is already in use');
+
+/** The target is pending, deleting or deleted: edits do not apply. */
+export const userStateConflict = (): ConflictException =>
+  conflict(ApiErrorCode.UserStateConflict, 'The user cannot be changed');
+
+export const lastAccessManager = (): ConflictException =>
+  conflict(
+    ApiErrorCode.LastAccessManager,
+    'At least one active user with rbac@manage must remain',
+  );
+
+export const payloadTooLarge = (message: string): PayloadTooLargeException =>
+  new PayloadTooLargeException(
+    response(
+      HttpStatus.PAYLOAD_TOO_LARGE,
+      ApiErrorCode.PayloadTooLarge,
+      message,
+    ),
+  );
+
+export const unsupportedMediaType = (
+  message: string,
+): UnsupportedMediaTypeException =>
+  new UnsupportedMediaTypeException(
+    response(
+      HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+      ApiErrorCode.UnsupportedMediaType,
+      message,
+    ),
+  );
+
+export const invalidImage = (message: string): BadRequestException =>
+  invalidRequest(message, ApiErrorCode.InvalidImage);
+
+/**
+ * The challenge is committed but SMTP did not take the email. The body tells
+ * the client how to continue (resend after the pause); it never has a secret.
+ */
+export const emailChangeDeliveryUnavailable = (
+  method: string,
+  challengeId: string,
+  retryAfterSeconds: number,
+): ServiceUnavailableException =>
+  serviceUnavailable('Could not send the email. Use resend after the pause.', {
+    code: ApiErrorCode.EmailChangeUnavailable,
+    confirmationRequired: true,
+    method,
+    challengeId,
+    retryAfterSeconds,
+  });
 
 export interface ProblemDetails {
   type: string;

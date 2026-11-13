@@ -3,12 +3,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { RbacPolicyHealthIndicator } from '@/modules/rbac/rbac-policy.health';
 
+import { EmailChangeKeyHealthIndicator } from '@/modules/users/profile/health/email-change-key.health';
+
 import { HealthService } from './health.service';
 
 describe('HealthService', () => {
   let service: HealthService;
   const healthCheckService = { check: jest.fn() };
   const rbacPolicy = { check: jest.fn() };
+  const emailChangeKey = { check: jest.fn() };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -18,6 +21,7 @@ describe('HealthService', () => {
         HealthService,
         { provide: HealthCheckService, useValue: healthCheckService },
         { provide: RbacPolicyHealthIndicator, useValue: rbacPolicy },
+        { provide: EmailChangeKeyHealthIndicator, useValue: emailChangeKey },
       ],
     }).compile();
 
@@ -40,7 +44,7 @@ describe('HealthService', () => {
     expect(healthCheckService.check).toHaveBeenCalledWith([]);
   });
 
-  it('readiness runs the RBAC policy indicator', async () => {
+  it('readiness runs the RBAC policy and email change key indicators', async () => {
     const result = { status: 'error', info: {}, error: {}, details: {} };
     healthCheckService.check.mockImplementation(
       (indicators: Array<() => unknown>) => {
@@ -51,5 +55,6 @@ describe('HealthService', () => {
 
     await expect(service.checkReadiness()).resolves.toBe(result);
     expect(rbacPolicy.check).toHaveBeenCalledTimes(1);
+    expect(emailChangeKey.check).toHaveBeenCalledTimes(1);
   });
 });
