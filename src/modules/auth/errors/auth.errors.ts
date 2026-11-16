@@ -38,6 +38,9 @@ export enum ApiErrorCode {
   UnsupportedMediaType = 'unsupported_media_type',
   InvalidImage = 'invalid_image',
   EmailChangeUnavailable = 'email_change_unavailable',
+  SelfConfirmationRequired = 'self_confirmation_required',
+  IdempotencyKeyConflict = 'idempotency_key_conflict',
+  DeletionUnavailable = 'deletion_unavailable',
 }
 
 export const TokenFailureReason = {
@@ -311,6 +314,37 @@ export const emailChangeDeliveryUnavailable = (
 ): ServiceUnavailableException =>
   serviceUnavailable('Could not send the email. Use resend after the pause.', {
     code: ApiErrorCode.EmailChangeUnavailable,
+    confirmationRequired: true,
+    method,
+    challengeId,
+    retryAfterSeconds,
+  });
+
+/** An administrator may not delete the own account: it needs the email challenge. */
+export const selfConfirmationRequired = (): ForbiddenException =>
+  new ForbiddenException(
+    response(
+      HttpStatus.FORBIDDEN,
+      ApiErrorCode.SelfConfirmationRequired,
+      'Delete the own account with the confirmation flow',
+    ),
+  );
+
+/** The same `Idempotency-Key` was used for another user. */
+export const idempotencyKeyConflict = (): ConflictException =>
+  conflict(
+    ApiErrorCode.IdempotencyKeyConflict,
+    'The Idempotency-Key belongs to another request',
+  );
+
+/** The challenge is committed but SMTP did not take the email (no secret in the body). */
+export const deletionDeliveryUnavailable = (
+  method: string,
+  challengeId: string,
+  retryAfterSeconds: number,
+): ServiceUnavailableException =>
+  serviceUnavailable('Could not send the email. Use resend after the pause.', {
+    code: ApiErrorCode.DeletionUnavailable,
     confirmationRequired: true,
     method,
     challengeId,

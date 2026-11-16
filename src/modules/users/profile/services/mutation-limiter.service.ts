@@ -2,36 +2,8 @@ import { Injectable } from '@nestjs/common';
 
 import { ConfigService } from '@/core/config/config.service';
 
+import { SlidingWindow } from '../utils/sliding-window';
 import type { RateLimitDecision } from './profile-rate-limiter.service';
-
-const SWEEP_THRESHOLD = 10_000;
-
-/** In-memory sliding window per key (per process, reset on restart). */
-class Window {
-  private readonly hits = new Map<string, number[]>();
-
-  private recent(key: string, now: number, windowMs: number): number[] {
-    return (this.hits.get(key) ?? []).filter((at) => at > now - windowMs);
-  }
-
-  retryAfter(key: string, limit: number, windowMs: number): number {
-    const now = Date.now();
-    const recent = this.recent(key, now, windowMs);
-    return recent.length < limit
-      ? 0
-      : Math.max(1, Math.ceil((recent[0] + windowMs - now) / 1000));
-  }
-
-  record(key: string, windowMs: number): void {
-    const now = Date.now();
-    this.hits.set(key, [...this.recent(key, now, windowMs), now]);
-    if (this.hits.size > SWEEP_THRESHOLD) {
-      for (const [k, stamps] of this.hits) {
-        if (stamps.every((at) => at <= now - windowMs)) this.hits.delete(k);
-      }
-    }
-  }
-}
 
 /**
  * Limits of the update operations: profile/photo mutations (30 per hour) and
@@ -39,8 +11,8 @@ class Window {
  */
 @Injectable()
 export class MutationLimiter {
-  private readonly mutations = new Window();
-  private readonly emails = new Window();
+  private readonly mutations = new SlidingWindow();
+  private readonly emails = new SlidingWindow();
 
   constructor(private readonly config: ConfigService) {}
 

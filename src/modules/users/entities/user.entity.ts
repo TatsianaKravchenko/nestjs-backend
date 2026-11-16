@@ -23,6 +23,14 @@ export enum UserStatus {
   'CHK_users_display_name',
   `"display_name" IS NULL OR ("display_name" IS NFC NORMALIZED AND char_length("display_name") BETWEEN 1 AND 80)`,
 )
+@Check(
+  'CHK_users_password_hash_required',
+  `"password_hash" IS NOT NULL OR "status" = 'deleted'`,
+)
+@Check(
+  'CHK_users_deleted_erased',
+  `"status" <> 'deleted' OR ("display_name" IS NULL AND "photo_key" IS NULL)`,
+)
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -31,9 +39,17 @@ export class User {
   @Column({ type: 'varchar', length: 320, unique: true })
   email!: string;
 
-  /** Argon2id hash (the salt is embedded in the encoded string). */
-  @Column({ name: 'password_hash', type: 'varchar', length: 255 })
-  passwordHash!: string;
+  /**
+   * Argon2id hash (the salt is embedded in the encoded string). Null only
+   * after the deletion was finalized (`status = deleted`), enforced by a CHECK.
+   */
+  @Column({
+    name: 'password_hash',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
+  passwordHash!: string | null;
 
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.PENDING })
   status!: UserStatus;

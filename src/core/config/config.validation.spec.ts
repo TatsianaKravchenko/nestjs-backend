@@ -13,6 +13,7 @@ const valid = () => ({
   LOGIN_CHALLENGE_HMAC_KEY: key('c'),
   AUTH_LOG_PSEUDONYM_KEY: key('d'),
   EMAIL_CHANGE_HMAC_KEY: key('e'),
+  DELETION_CHALLENGE_HMAC_KEY: key('f'),
   JWT_ISSUER: 'issuer',
   JWT_AUDIENCE: 'audience',
   POSTGRES_HOST: 'localhost',
@@ -31,6 +32,7 @@ const KEYS = [
   'LOGIN_CHALLENGE_HMAC_KEY',
   'AUTH_LOG_PSEUDONYM_KEY',
   'EMAIL_CHANGE_HMAC_KEY',
+  'DELETION_CHALLENGE_HMAC_KEY',
 ] as const;
 
 describe('configValidationSchema (authentication)', () => {

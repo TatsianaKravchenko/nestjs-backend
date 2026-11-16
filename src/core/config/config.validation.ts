@@ -9,6 +9,7 @@ const DISTINCT_KEYS = [
   'LOGIN_CHALLENGE_HMAC_KEY',
   'AUTH_LOG_PSEUDONYM_KEY',
   'EMAIL_CHANGE_HMAC_KEY',
+  'DELETION_CHALLENGE_HMAC_KEY',
 ] as const;
 
 const strongKey = () =>
@@ -130,6 +131,28 @@ export const configValidationSchema = Joi.object<Config>({
   /** At most this many emails per user and window (5 per hour). */
   EMAIL_CHANGE_WINDOW_MS: Joi.number().optional().default(3600000),
   EMAIL_CHANGE_HOURLY_LIMIT: Joi.number().optional().default(5),
+
+  /**
+   * Account deletion options. The HMAC key is separate from every other key.
+   */
+  DELETION_CHALLENGE_HMAC_KEY: strongKey(),
+  DELETION_CONFIRMATION_METHOD: Joi.string()
+    .valid('otp', 'magic_link')
+    .optional()
+    .default('otp'),
+  DELETION_MAGIC_LINK_URL: Joi.string()
+    .uri()
+    .optional()
+    .default('http://localhost:4200/profile/deletion/confirm'),
+  /** At most this many challenge emails per user and window (5 per hour). */
+  DELETION_EMAIL_WINDOW_MS: Joi.number().optional().default(3600000),
+  DELETION_EMAIL_HOURLY_LIMIT: Joi.number().optional().default(5),
+  /** Deletion status reads per IP and window (60 per minute). */
+  DELETION_STATUS_WINDOW_MS: Joi.number().optional().default(60000),
+  DELETION_STATUS_LIMIT: Joi.number().optional().default(60),
+  DELETION_WORKER_ENABLED: Joi.boolean().optional().default(true),
+  DELETION_WORKER_INTERVAL_MS: Joi.number().optional().default(5000),
+  DELETION_WORKER_LEASE_SECONDS: Joi.number().min(1).optional().default(300),
 
   /**
    * Storage cleanup worker: deletes objects of replaced or cleared photos and

@@ -104,8 +104,10 @@ describe('User profile read (e2e)', () => {
       roles?: string[];
     } = {},
   ): Promise<string> {
+    // A `deleted` user holds no personal data (CHK_users_deleted_erased).
+    const erased = options.status === 'deleted';
     // `users.photo_key` is unique: each user gets its own copy of the fixture object.
-    let photoKey = options.photoKey ?? null;
+    let photoKey = erased ? null : (options.photoKey ?? null);
     if (photoKey === PHOTO_KEY) {
       photoKey = `${unique('photo')}-${PHOTO_KEY}`;
       await writeFile(join(storageDir, photoKey), PHOTO_BYTES);
@@ -117,7 +119,11 @@ describe('User profile read (e2e)', () => {
         `${unique(label)}${DOMAIN}`,
         SECRET_HASH,
         options.status ?? 'active',
-        options.displayName === undefined ? 'Jane Doe' : options.displayName,
+        erased
+          ? null
+          : options.displayName === undefined
+            ? 'Jane Doe'
+            : options.displayName,
         photoKey,
       ],
     );

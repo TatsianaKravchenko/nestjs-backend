@@ -75,6 +75,20 @@ export interface Config {
   EMAIL_CHANGE_HOURLY_LIMIT?: number;
 
   /**
+   * Account deletion options
+   */
+  DELETION_CHALLENGE_HMAC_KEY: string;
+  DELETION_CONFIRMATION_METHOD?: 'otp' | 'magic_link';
+  DELETION_MAGIC_LINK_URL?: string;
+  DELETION_EMAIL_WINDOW_MS?: number;
+  DELETION_EMAIL_HOURLY_LIMIT?: number;
+  DELETION_STATUS_WINDOW_MS?: number;
+  DELETION_STATUS_LIMIT?: number;
+  DELETION_WORKER_ENABLED?: boolean;
+  DELETION_WORKER_INTERVAL_MS?: number;
+  DELETION_WORKER_LEASE_SECONDS?: number;
+
+  /**
    * Storage cleanup worker options
    */
   STORAGE_CLEANUP_WORKER_ENABLED?: boolean;

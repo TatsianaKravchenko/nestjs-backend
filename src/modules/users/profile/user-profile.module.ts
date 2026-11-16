@@ -47,6 +47,6 @@ import { UsersController } from './controllers/users.controller';
     CsrfGuard,
     { provide: PHOTO_STORAGE, useClass: LocalPhotoStorage },
   ],
-  exports: [EmailChangeKeyHealthIndicator, StorageCleanupWorker],
+  exports: [EmailChangeKeyHealthIndicator, StorageCleanupWorker, PHOTO_STORAGE],
 })
 export class UserProfileModule {}

@@ -33,6 +33,8 @@ describe('MailService', () => {
     ['sendRegistrationMagicLink', 'https://app.test/confirm?t=1'],
     ['sendLoginOtp', '123456'],
     ['sendLoginMagicLink', 'https://app.test/login?t=1'],
+    ['sendDeletionOtp', '123456'],
+    ['sendDeletionMagicLink', 'https://app.test/delete#token=a.b'],
   ] as const)(
     '%s sends one email containing the secret',
     async (method, secret) => {

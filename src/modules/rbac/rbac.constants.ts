@@ -9,13 +9,17 @@ export const USERS_READ_ANY_ACTION = 'read_any';
 export const USERS_UPDATE_ACTION = 'update';
 /** Additionally required to change another user or to set an email directly. */
 export const USERS_UPDATE_ANY_ACTION = 'update_any';
+/** Delete the own account (after the email challenge). */
+export const USERS_DELETE_ACTION = 'delete';
+/** Additionally required to delete another user or read a foreign deletion status. */
+export const USERS_DELETE_ANY_ACTION = 'delete_any';
 export const USERS_ACTIONS = [
   USERS_READ_ACTION,
   USERS_READ_ANY_ACTION,
   USERS_UPDATE_ACTION,
   USERS_UPDATE_ANY_ACTION,
-  'delete',
-  'delete_any',
+  USERS_DELETE_ACTION,
+  USERS_DELETE_ANY_ACTION,
   'list',
 ];
 

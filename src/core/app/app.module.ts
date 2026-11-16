@@ -12,6 +12,7 @@ import { ThrottlerModule } from '@/core/throttler/throttler.module';
  */
 import { AuthModule } from '@/modules/auth/auth.module';
 import { RbacModule } from '@/modules/rbac/rbac.module';
+import { DeletionModule } from '@/modules/users/deletion/deletion.module';
 import { UserProfileModule } from '@/modules/users/profile/user-profile.module';
 import { UsersModule } from '@/modules/users/users.module';
 
@@ -30,6 +31,7 @@ import { UsersModule } from '@/modules/users/users.module';
     RbacModule,
     AuthModule,
     UserProfileModule,
+    DeletionModule,
   ],
 })
 export class AppModule {}
