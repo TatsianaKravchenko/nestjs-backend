@@ -155,6 +155,19 @@ export const configValidationSchema = Joi.object<Config>({
   DELETION_WORKER_LEASE_SECONDS: Joi.number().min(1).optional().default(300),
 
   /**
+   * Admin user list. Cursor keys are `kid:secret` pairs separated by commas
+   * (each secret at least 32 bytes); the active id must be one of them. They
+   * are optional at startup: a missing or weak setting fails the readiness
+   * probe and the endpoint answers 503.
+   */
+  USER_LIST_CURSOR_ACTIVE_KEY_ID: Joi.string().allow('').optional(),
+  USER_LIST_CURSOR_HMAC_KEYS: Joi.string().allow('').optional(),
+  /** Limits per window: 60 per actor, 120 per IP. */
+  ADMIN_USERS_LIST_WINDOW_MS: Joi.number().optional().default(60000),
+  ADMIN_USERS_LIST_ACTOR_LIMIT: Joi.number().optional().default(60),
+  ADMIN_USERS_LIST_IP_LIMIT: Joi.number().optional().default(120),
+
+  /**
    * Storage cleanup worker: deletes objects of replaced or cleared photos and
    * sweeps unreferenced objects older than one hour.
    */

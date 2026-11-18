@@ -27,6 +27,11 @@ export function hasServablePhoto(
   );
 }
 
+/** API URL of the protected photo endpoint; built from the id only, no storage call. */
+export function photoUrlFor(userId: string, publicBaseUrl: string): string {
+  return `${publicBaseUrl.replace(/\/+$/, '')}/users/${encodeURIComponent(userId)}/photo`;
+}
+
 /**
  * Explicit allow-list projection. Every response field is copied by name, so a
  * column added to the entity later does not leak unless it is added here.
@@ -40,7 +45,7 @@ export function toUserProfile(
   dto.email = row.email;
   dto.displayName = row.displayName ?? null;
   dto.photoUrl = hasServablePhoto(row)
-    ? `${publicBaseUrl.replace(/\/+$/, '')}/users/${encodeURIComponent(row.id)}/photo`
+    ? photoUrlFor(row.id, publicBaseUrl)
     : null;
   dto.status = row.status;
   dto.createdAt = row.createdAt.toISOString();

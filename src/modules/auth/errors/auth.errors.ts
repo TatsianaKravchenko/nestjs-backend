@@ -41,6 +41,7 @@ export enum ApiErrorCode {
   SelfConfirmationRequired = 'self_confirmation_required',
   IdempotencyKeyConflict = 'idempotency_key_conflict',
   DeletionUnavailable = 'deletion_unavailable',
+  InvalidCursor = 'invalid_cursor',
 }
 
 export const TokenFailureReason = {
@@ -173,6 +174,10 @@ export const invalidRequest = (
   code: ApiErrorCode = ApiErrorCode.InvalidRequest,
 ): BadRequestException =>
   new BadRequestException(response(HttpStatus.BAD_REQUEST, code, message));
+
+/** Tampered, expired, foreign-key or wrong-query cursor: one answer for all. */
+export const invalidCursor = (): BadRequestException =>
+  invalidRequest('Invalid cursor', ApiErrorCode.InvalidCursor);
 
 export const invalidConfirmation = (): BadRequestException =>
   invalidRequest(

@@ -13,6 +13,8 @@ export const USERS_UPDATE_ANY_ACTION = 'update_any';
 export const USERS_DELETE_ACTION = 'delete';
 /** Additionally required to delete another user or read a foreign deletion status. */
 export const USERS_DELETE_ANY_ACTION = 'delete_any';
+/** List all users (`GET /admin/users`). */
+export const USERS_LIST_ACTION = 'list';
 export const USERS_ACTIONS = [
   USERS_READ_ACTION,
   USERS_READ_ANY_ACTION,
@@ -20,7 +22,7 @@ export const USERS_ACTIONS = [
   USERS_UPDATE_ANY_ACTION,
   USERS_DELETE_ACTION,
   USERS_DELETE_ANY_ACTION,
-  'list',
+  USERS_LIST_ACTION,
 ];
 
 export const DEFAULT_ROLE = 'user';

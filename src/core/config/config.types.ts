@@ -89,6 +89,15 @@ export interface Config {
   DELETION_WORKER_LEASE_SECONDS?: number;
 
   /**
+   * Admin user list options
+   */
+  USER_LIST_CURSOR_ACTIVE_KEY_ID?: string;
+  USER_LIST_CURSOR_HMAC_KEYS?: string;
+  ADMIN_USERS_LIST_WINDOW_MS?: number;
+  ADMIN_USERS_LIST_ACTOR_LIMIT?: number;
+  ADMIN_USERS_LIST_IP_LIMIT?: number;
+
+  /**
    * Storage cleanup worker options
    */
   STORAGE_CLEANUP_WORKER_ENABLED?: boolean;

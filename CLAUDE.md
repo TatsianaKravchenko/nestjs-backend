@@ -13,6 +13,7 @@
 - Database Changes: Whenever you modify or create entities (`*.entity.ts`), you MUST generate and apply a TypeORM migration using:
   - Generate: `npm run typeorm -- migration:generate src/database/migrations/<MigrationName> -d src/database/data-source.ts` (the `migration:generate` npm script already hardcodes a path, so passing another path to it fails with "Unknown argument")
   - Run: `npm run migration:run`
+- Manually maintained indexes: `IDX_users_email_prefix` (`email text_pattern_ops`) and `IDX_users_display_name_prefix` (partial functional index on `lower(normalize(display_name, NFC))`), created in `1798000000000-AddAdminUserListIndexes`, cannot be expressed in the TypeORM entity. `migration:generate` will propose dropping them: remove those `DROP INDEX` statements from any generated migration and never drop them unless the admin user list search (`GET /admin/users`) is changed.
 
 ## Code Style & Standards
 

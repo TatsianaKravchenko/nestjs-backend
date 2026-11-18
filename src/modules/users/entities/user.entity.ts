@@ -19,6 +19,12 @@ export enum UserStatus {
 }
 
 @Entity('users')
+// Admin list (3.1.7). The `text_pattern_ops` email index and the partial
+// functional display-name index (IDX_users_email_prefix, IDX_users_display_name_prefix)
+// cannot be expressed here; they live only in the migration.
+@Index('IDX_users_created_at_id', ['createdAt', 'id'])
+@Index('IDX_users_status_created_at_id', ['status', 'createdAt', 'id'])
+@Index('IDX_users_status_id_created_at', ['status', 'id', 'createdAt'])
 @Check(
   'CHK_users_display_name',
   `"display_name" IS NULL OR ("display_name" IS NFC NORMALIZED AND char_length("display_name") BETWEEN 1 AND 80)`,
