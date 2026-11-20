@@ -110,6 +110,8 @@ export interface Config {
   TRANSFORM_TEMP_DIR?: string;
   TRANSFORM_STORAGE_DIR?: string;
   TRANSFORM_TEMP_SWEEP_MAX_AGE_MS?: number;
+  /** Input limit of the text-format conversions (CSV, JSON, XML, YAML). */
+  TRANSFORM_TEXT_MAX_INPUT_BYTES?: number;
 
   /**
    * SMTP options (used to deliver confirmation emails)

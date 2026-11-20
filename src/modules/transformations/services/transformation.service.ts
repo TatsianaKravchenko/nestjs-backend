@@ -7,7 +7,10 @@ import type { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 import { setTimeout as sleep } from 'timers/promises';
 
-import { TransformationStatus } from '../entities/transformation.entity';
+import {
+  TransformationStatus,
+  TransformationType,
+} from '../entities/transformation.entity';
 import { StorageStatus } from '../entities/transformation-object.entity';
 import { ByteLimit, ByteLimitError } from '../utils/byte-limit';
 import {
@@ -85,6 +88,25 @@ interface Context {
   source: string;
   target: string;
   type: string;
+}
+
+/** What the audit and the error mapping need to know about an attempt. */
+type Identity = Pick<Context, 'id' | 'source' | 'target' | 'type'> & {
+  cmd: Pick<ConvertCommand, 'requestId' | 'userId'>;
+};
+
+/**
+ * An upload that was read completely but is not a valid request (for example
+ * unexpected multipart parts). It is recorded as an error, never as a success.
+ */
+export interface RejectedAttempt {
+  requestId: string;
+  userId: string;
+  sourceFormat: string;
+  /** May be missing or invalid: it is stored as `unknown` then. */
+  targetFormat: string;
+  inputSize: number;
+  startedAt: Date;
 }
 
 /**
@@ -219,6 +241,63 @@ export class TransformationService {
     } finally {
       if (!handedOver) await workspace.dispose();
     }
+  }
+
+  /**
+   * Writes an `error` history row for an upload the HTTP layer refused after
+   * reading it, then throws the client error of `code`. Without a row (history
+   * down) the answer is a 503, like for every other attempt.
+   */
+  async rejectAttempt(
+    attempt: RejectedAttempt,
+    code: FailureCode,
+  ): Promise<never> {
+    const target = normalizeFormat(attempt.targetFormat);
+    const ctx: Identity = {
+      id: randomUUID(),
+      cmd: attempt,
+      source: normalizeFormat(attempt.sourceFormat),
+      target: isFormat(target) ? target : 'unknown',
+      type: TransformationType.FILE,
+    };
+    const completedAt = new Date();
+    const durationMs = Math.max(
+      0,
+      completedAt.getTime() - attempt.startedAt.getTime(),
+    );
+    try {
+      await this.history.record({
+        id: ctx.id,
+        userId: attempt.userId,
+        type: TransformationType.FILE,
+        sourceFormat: ctx.source,
+        targetFormat: ctx.target,
+        status: TransformationStatus.ERROR,
+        inputSize: attempt.inputSize,
+        outputSize: null,
+        durationMs,
+        errorCode: code,
+        createdAt: attempt.startedAt,
+        completedAt,
+      });
+    } catch {
+      throw this.reject(
+        ctx,
+        'history_unavailable',
+        'transformation.history_unavailable',
+        { inputSize: attempt.inputSize, durationMs },
+      );
+    }
+    const status = failureStatus(code);
+    this.audit[status >= 500 ? 'error' : 'warn']('transformation.failed', {
+      ...this.fields(ctx),
+      inputSize: attempt.inputSize,
+      durationMs,
+      result: 'error',
+      errorCode: code,
+      status,
+    });
+    throw toHttpException(code);
   }
 
   /** Copies the upload to the temp file under the direction's size limit. */
@@ -412,7 +491,7 @@ export class TransformationService {
   }
 
   private reject(
-    ctx: Context,
+    ctx: Identity,
     code: FailureCode,
     event = 'transformation.rejected',
     extra: { inputSize?: number; durationMs?: number } = {},
@@ -428,7 +507,7 @@ export class TransformationService {
     return toHttpException(code);
   }
 
-  private fields(ctx: Context) {
+  private fields(ctx: Identity) {
     return {
       requestId: ctx.cmd.requestId,
       transformationId: ctx.id,

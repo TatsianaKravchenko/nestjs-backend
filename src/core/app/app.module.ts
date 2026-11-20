@@ -14,6 +14,7 @@ import { AuthModule } from '@/modules/auth/auth.module';
 import { RbacModule } from '@/modules/rbac/rbac.module';
 import { AdminUsersModule } from '@/modules/users/admin-list/admin-users.module';
 import { DeletionModule } from '@/modules/users/deletion/deletion.module';
+import { TextFormatsModule } from '@/modules/text-formats/text-formats.module';
 import { TransformationsModule } from '@/modules/transformations/transformations.module';
 import { UserProfileModule } from '@/modules/users/profile/user-profile.module';
 import { UsersModule } from '@/modules/users/users.module';
@@ -36,6 +37,7 @@ import { UsersModule } from '@/modules/users/users.module';
     DeletionModule,
     AdminUsersModule,
     TransformationsModule,
+    TextFormatsModule,
   ],
 })
 export class AppModule {}

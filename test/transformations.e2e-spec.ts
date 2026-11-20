@@ -53,6 +53,7 @@ import { TransformationEraser } from '../src/modules/transformations/services/tr
 import { TransformationHistoryService } from '../src/modules/transformations/services/transformation-history.service';
 import { TransformationService } from '../src/modules/transformations/services/transformation.service';
 import { TransformationsPolicyService } from '../src/modules/transformations/services/transformations-policy.service';
+import { TextConvertersService } from '../src/modules/text-formats/services/text-converters.service';
 import { TransformationsModule } from '../src/modules/transformations/transformations.module';
 import { UserEraserRegistry } from '../src/modules/users/deletion/services/user-eraser.registry';
 
@@ -248,6 +249,9 @@ describe('File transformations foundation (e2e)', () => {
       .useValue(config)
       .overrideProvider(MailService)
       .useValue({})
+      // This suite registers its own csv converters in place of the real ones.
+      .overrideProvider(TextConvertersService)
+      .useValue({ onModuleInit: () => undefined })
       .compile();
     app = moduleRef.createNestApplication<NestFastifyApplication>(
       new FastifyAdapter({ routerOptions: { maxParamLength: 256 } }),

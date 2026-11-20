@@ -193,6 +193,12 @@ export const configValidationSchema = Joi.object<Config>({
     .min(60000)
     .optional()
     .default(3600000),
+  TRANSFORM_TEXT_MAX_INPUT_BYTES: Joi.number()
+    .integer()
+    .min(1024)
+    .max(50 * 1024 * 1024)
+    .optional()
+    .default(10 * 1024 * 1024),
 
   /**
    * SMTP options (used to deliver confirmation emails)

@@ -577,6 +577,70 @@ describe('TransformationService', () => {
     });
   });
 
+  describe('rejectAttempt (an upload refused after it was read)', () => {
+    const attempt = (overrides = {}) => ({
+      requestId: 'req-9',
+      userId: USER_ID,
+      sourceFormat: 'CSV',
+      targetFormat: ' JSON ',
+      inputSize: 12,
+      startedAt: new Date(Date.now() - 50),
+      ...overrides,
+    });
+
+    it('records an error row with a safe code and throws the matching 400', async () => {
+      const error = await rejection(
+        service.rejectAttempt(attempt(), 'invalid_input'),
+      );
+
+      expect(error.getStatus()).toBe(400);
+      expect(lastRecord()).toMatchObject({
+        userId: USER_ID,
+        type: 'file',
+        sourceFormat: 'csv',
+        targetFormat: 'json',
+        status: TransformationStatus.ERROR,
+        inputSize: 12,
+        outputSize: null,
+        errorCode: 'invalid_input',
+      });
+      expect(lastRecord().durationMs).toBeGreaterThanOrEqual(0);
+      expect(audit.warn).toHaveBeenCalledWith(
+        'transformation.failed',
+        expect.objectContaining({
+          requestId: 'req-9',
+          result: 'error',
+          errorCode: 'invalid_input',
+          status: 400,
+        }),
+      );
+    });
+
+    it.each([[''], ['not a format!'], ['x'.repeat(40)]])(
+      'stores an unusable target (%p) as "unknown"',
+      async (targetFormat) => {
+        await rejection(
+          service.rejectAttempt(attempt({ targetFormat }), 'invalid_input'),
+        );
+        expect(lastRecord().targetFormat).toBe('unknown');
+      },
+    );
+
+    it('answers 503 when the error row cannot be written', async () => {
+      history.record.mockRejectedValue(new Error('down'));
+
+      const error = await rejection(
+        service.rejectAttempt(attempt(), 'invalid_input'),
+      );
+
+      expect(error.getStatus()).toBe(503);
+      expect(audit.error).toHaveBeenCalledWith(
+        'transformation.history_unavailable',
+        expect.objectContaining({ errorCode: 'history_unavailable' }),
+      );
+    });
+  });
+
   describe('save=true', () => {
     it('keeps a copy under an opaque key and reports pending without waiting for storage', async () => {
       registry.register(echo());
