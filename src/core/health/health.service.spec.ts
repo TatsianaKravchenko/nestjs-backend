@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { RbacPolicyHealthIndicator } from '@/modules/rbac/rbac-policy.health';
 
+import { TransformationsReadinessIndicator } from '@/modules/transformations/health/transformations.health';
 import { UserListCursorHealthIndicator } from '@/modules/users/admin-list/health/user-list-cursor.health';
 import { DeletionReadinessIndicator } from '@/modules/users/deletion/health/deletion.health';
 import { EmailChangeKeyHealthIndicator } from '@/modules/users/profile/health/email-change-key.health';
@@ -16,6 +17,7 @@ describe('HealthService', () => {
   const emailChangeKey = { check: jest.fn() };
   const deletion = { checkKey: jest.fn(), checkErasers: jest.fn() };
   const userListCursor = { check: jest.fn() };
+  const transformations = { check: jest.fn() };
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -28,6 +30,10 @@ describe('HealthService', () => {
         { provide: EmailChangeKeyHealthIndicator, useValue: emailChangeKey },
         { provide: DeletionReadinessIndicator, useValue: deletion },
         { provide: UserListCursorHealthIndicator, useValue: userListCursor },
+        {
+          provide: TransformationsReadinessIndicator,
+          useValue: transformations,
+        },
       ],
     }).compile();
 
@@ -65,5 +71,6 @@ describe('HealthService', () => {
     expect(deletion.checkKey).toHaveBeenCalledTimes(1);
     expect(deletion.checkErasers).toHaveBeenCalledTimes(1);
     expect(userListCursor.check).toHaveBeenCalledTimes(1);
+    expect(transformations.check).toHaveBeenCalledTimes(1);
   });
 });

@@ -178,6 +178,23 @@ export const configValidationSchema = Joi.object<Config>({
     .default(15 * 60 * 1000),
 
   /**
+   * File transformations. The temp directory is private (created with mode
+   * 0700, never served); empty means `<os tmp>/mnt-transformations`. The
+   * storage directory is the local stand-in for object storage (task 2.4):
+   * single-instance development only. Temp job directories older than the
+   * sweep age are removed at startup.
+   */
+  TRANSFORM_TEMP_DIR: Joi.string().allow('').optional(),
+  TRANSFORM_STORAGE_DIR: Joi.string()
+    .allow('')
+    .optional()
+    .default('./storage/transformations'),
+  TRANSFORM_TEMP_SWEEP_MAX_AGE_MS: Joi.number()
+    .min(60000)
+    .optional()
+    .default(3600000),
+
+  /**
    * SMTP options (used to deliver confirmation emails)
    */
   SMTP_HOST: Joi.string().allow('').optional(),

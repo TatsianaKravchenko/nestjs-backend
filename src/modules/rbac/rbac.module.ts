@@ -43,6 +43,7 @@ import { RbacGuard } from './rbac.guard';
   /** `RbacGuard` and the snapshot are exported so other modules can protect routes. */
   exports: [
     PolicySnapshotService,
+    RbacBootstrapService,
     RbacGuard,
     DefaultRoleService,
     RbacPolicyHealthIndicator,

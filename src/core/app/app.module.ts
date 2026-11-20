@@ -14,6 +14,7 @@ import { AuthModule } from '@/modules/auth/auth.module';
 import { RbacModule } from '@/modules/rbac/rbac.module';
 import { AdminUsersModule } from '@/modules/users/admin-list/admin-users.module';
 import { DeletionModule } from '@/modules/users/deletion/deletion.module';
+import { TransformationsModule } from '@/modules/transformations/transformations.module';
 import { UserProfileModule } from '@/modules/users/profile/user-profile.module';
 import { UsersModule } from '@/modules/users/users.module';
 
@@ -34,6 +35,7 @@ import { UsersModule } from '@/modules/users/users.module';
     UserProfileModule,
     DeletionModule,
     AdminUsersModule,
+    TransformationsModule,
   ],
 })
 export class AppModule {}

@@ -105,6 +105,13 @@ export interface Config {
   STORAGE_ORPHAN_SWEEP_INTERVAL_MS?: number;
 
   /**
+   * File transformation options
+   */
+  TRANSFORM_TEMP_DIR?: string;
+  TRANSFORM_STORAGE_DIR?: string;
+  TRANSFORM_TEMP_SWEEP_MAX_AGE_MS?: number;
+
+  /**
    * SMTP options (used to deliver confirmation emails)
    */
   SMTP_HOST?: string;

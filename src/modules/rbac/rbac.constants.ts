@@ -25,6 +25,31 @@ export const USERS_ACTIONS = [
   USERS_LIST_ACTION,
 ];
 
+export const TRANSFORMATIONS_PERMISSION = 'transformations';
+/** Run a conversion (`POST /api/convert`, `POST /api/images/convert`, direction lists). */
+export const TRANSFORMATIONS_CONVERT_ACTION = 'convert';
+/** Read the own history. */
+export const TRANSFORMATIONS_HISTORY_ACTION = 'history';
+/** Read the history of another user. */
+export const TRANSFORMATIONS_HISTORY_ANY_ACTION = 'history_any';
+/** Download the own stored result. */
+export const TRANSFORMATIONS_DOWNLOAD_ACTION = 'download';
+/** Download the stored result of another user. */
+export const TRANSFORMATIONS_DOWNLOAD_ANY_ACTION = 'download_any';
+export const TRANSFORMATIONS_ACTIONS = [
+  TRANSFORMATIONS_CONVERT_ACTION,
+  TRANSFORMATIONS_HISTORY_ACTION,
+  TRANSFORMATIONS_HISTORY_ANY_ACTION,
+  TRANSFORMATIONS_DOWNLOAD_ACTION,
+  TRANSFORMATIONS_DOWNLOAD_ANY_ACTION,
+];
+/** Actions the default `user` role receives on the first setup. */
+export const TRANSFORMATIONS_USER_ACTIONS = [
+  TRANSFORMATIONS_CONVERT_ACTION,
+  TRANSFORMATIONS_HISTORY_ACTION,
+  TRANSFORMATIONS_DOWNLOAD_ACTION,
+];
+
 export const DEFAULT_ROLE = 'user';
 export const ADMIN_ROLE = 'admin';
 

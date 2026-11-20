@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 
 import { RbacModule } from '@/modules/rbac/rbac.module';
+import { TransformationsModule } from '@/modules/transformations/transformations.module';
 import { AdminUsersModule } from '@/modules/users/admin-list/admin-users.module';
 import { DeletionModule } from '@/modules/users/deletion/deletion.module';
 import { UserProfileModule } from '@/modules/users/profile/user-profile.module';
@@ -16,6 +17,7 @@ import { HealthService } from './health.service';
     UserProfileModule,
     DeletionModule,
     AdminUsersModule,
+    TransformationsModule,
   ],
   controllers: [HealthController],
   providers: [HealthService],

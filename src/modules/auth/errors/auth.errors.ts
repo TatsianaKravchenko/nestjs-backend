@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  GatewayTimeoutException,
   HttpException,
   PayloadTooLargeException,
   UnsupportedMediaTypeException,
@@ -42,6 +43,10 @@ export enum ApiErrorCode {
   IdempotencyKeyConflict = 'idempotency_key_conflict',
   DeletionUnavailable = 'deletion_unavailable',
   InvalidCursor = 'invalid_cursor',
+  ConversionFailed = 'conversion_failed',
+  ConversionTimeout = 'conversion_timeout',
+  UnsupportedConversion = 'unsupported_conversion',
+  TransformationUnavailable = 'transformation_unavailable',
 }
 
 export const TokenFailureReason = {
@@ -301,6 +306,16 @@ export const unsupportedMediaType = (
     response(
       HttpStatus.UNSUPPORTED_MEDIA_TYPE,
       ApiErrorCode.UnsupportedMediaType,
+      message,
+    ),
+  );
+
+/** The conversion library did not finish in time. The body never names the library. */
+export const gatewayTimeout = (message: string): GatewayTimeoutException =>
+  new GatewayTimeoutException(
+    response(
+      HttpStatus.GATEWAY_TIMEOUT,
+      ApiErrorCode.ConversionTimeout,
       message,
     ),
   );

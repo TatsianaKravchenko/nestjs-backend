@@ -23,4 +23,5 @@ export const USER_DATA_STORES = [
   'users.photo',
   'auth.challenges',
   'rbac.roles',
+  'transformations',
 ] as const;
