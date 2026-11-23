@@ -23,6 +23,7 @@ const STATUS: Record<FailureCode, number> = {
   conversion_failed: 400,
   input_too_large: 413,
   output_too_large: 413,
+  image_too_large: 413,
   unsupported_format: 415,
   unsupported_direction: 415,
   timeout: 504,
@@ -50,6 +51,8 @@ export function toHttpException(code: FailureCode): HttpException {
       return payloadTooLarge('The file exceeds the size limit');
     case 'output_too_large':
       return payloadTooLarge('The result exceeds the size limit');
+    case 'image_too_large':
+      return payloadTooLarge('The image dimensions exceed the limit');
     case 'unsupported_format':
     case 'unsupported_direction':
       return unsupportedMediaType('This conversion is not supported');

@@ -112,6 +112,12 @@ export interface Config {
   TRANSFORM_TEMP_SWEEP_MAX_AGE_MS?: number;
   /** Input limit of the text-format conversions (CSV, JSON, XML, YAML). */
   TRANSFORM_TEXT_MAX_INPUT_BYTES?: number;
+  /** Input limit of PNG files. */
+  TRANSFORM_PNG_MAX_INPUT_BYTES?: number;
+  /** Input limit of JPEG files. */
+  TRANSFORM_JPEG_MAX_INPUT_BYTES?: number;
+  /** Input limit of SVG files. */
+  TRANSFORM_SVG_MAX_INPUT_BYTES?: number;
 
   /**
    * SMTP options (used to deliver confirmation emails)

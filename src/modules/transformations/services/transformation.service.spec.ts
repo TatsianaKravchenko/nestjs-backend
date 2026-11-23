@@ -616,6 +616,22 @@ describe('TransformationService', () => {
       );
     });
 
+    it('records the type of an image attempt', async () => {
+      await rejection(
+        service.rejectAttempt(
+          attempt({ sourceFormat: 'png', targetFormat: 'jpeg', type: 'image' }),
+          'invalid_input',
+        ),
+      );
+      expect(lastRecord()).toMatchObject({
+        type: 'image',
+        sourceFormat: 'png',
+      });
+      expect(audit.warn).toHaveBeenCalledWith(
+        'transformation.failed',
+        expect.objectContaining({ type: 'image' }),
+      );
+    });
     it.each([[''], ['not a format!'], ['x'.repeat(40)]])(
       'stores an unusable target (%p) as "unknown"',
       async (targetFormat) => {

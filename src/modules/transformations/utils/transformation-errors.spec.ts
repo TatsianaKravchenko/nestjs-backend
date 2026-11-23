@@ -12,6 +12,7 @@ const CODES: [FailureCode, number][] = [
   ['conversion_failed', 400],
   ['input_too_large', 413],
   ['output_too_large', 413],
+  ['image_too_large', 413],
   ['unsupported_format', 415],
   ['unsupported_direction', 415],
   ['timeout', 504],

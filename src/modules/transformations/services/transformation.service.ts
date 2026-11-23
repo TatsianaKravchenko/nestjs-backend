@@ -106,6 +106,8 @@ export interface RejectedAttempt {
   /** May be missing or invalid: it is stored as `unknown` then. */
   targetFormat: string;
   inputSize: number;
+  /** Defaults to `file`. */
+  type?: TransformationType;
   startedAt: Date;
 }
 
@@ -252,13 +254,14 @@ export class TransformationService {
     attempt: RejectedAttempt,
     code: FailureCode,
   ): Promise<never> {
+    const type = attempt.type ?? TransformationType.FILE;
     const target = normalizeFormat(attempt.targetFormat);
     const ctx: Identity = {
       id: randomUUID(),
       cmd: attempt,
       source: normalizeFormat(attempt.sourceFormat),
       target: isFormat(target) ? target : 'unknown',
-      type: TransformationType.FILE,
+      type,
     };
     const completedAt = new Date();
     const durationMs = Math.max(
@@ -269,7 +272,7 @@ export class TransformationService {
       await this.history.record({
         id: ctx.id,
         userId: attempt.userId,
-        type: TransformationType.FILE,
+        type,
         sourceFormat: ctx.source,
         targetFormat: ctx.target,
         status: TransformationStatus.ERROR,

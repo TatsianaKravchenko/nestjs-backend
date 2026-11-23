@@ -199,6 +199,24 @@ export const configValidationSchema = Joi.object<Config>({
     .max(50 * 1024 * 1024)
     .optional()
     .default(10 * 1024 * 1024),
+  TRANSFORM_PNG_MAX_INPUT_BYTES: Joi.number()
+    .integer()
+    .min(1024)
+    .max(50 * 1024 * 1024)
+    .optional()
+    .default(10 * 1024 * 1024),
+  TRANSFORM_JPEG_MAX_INPUT_BYTES: Joi.number()
+    .integer()
+    .min(1024)
+    .max(50 * 1024 * 1024)
+    .optional()
+    .default(10 * 1024 * 1024),
+  TRANSFORM_SVG_MAX_INPUT_BYTES: Joi.number()
+    .integer()
+    .min(1024)
+    .max(50 * 1024 * 1024)
+    .optional()
+    .default(10 * 1024 * 1024),
 
   /**
    * SMTP options (used to deliver confirmation emails)

@@ -12,6 +12,8 @@ export const CONVERTER_ERROR_CODES = [
   'invalid_input',
   'input_too_large',
   'output_too_large',
+  /** An image whose dimensions or pixel count exceed the limits (413). */
+  'image_too_large',
   'unsupported_format',
   /** A required dependency is down (reported as 503). */
   'dependency_unavailable',
