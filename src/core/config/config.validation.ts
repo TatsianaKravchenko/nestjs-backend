@@ -219,6 +219,39 @@ export const configValidationSchema = Joi.object<Config>({
     .default(10 * 1024 * 1024),
 
   /**
+   * Transformation history: 60 requests per user per minute on the history
+   * endpoints; rows (and their stored files) older than the retention period
+   * are removed in batches by a background job.
+   */
+  TRANSFORM_HISTORY_RATE_LIMIT: Joi.number()
+    .integer()
+    .min(1)
+    .optional()
+    .default(60),
+  TRANSFORM_HISTORY_RATE_WINDOW_MS: Joi.number()
+    .integer()
+    .min(1000)
+    .optional()
+    .default(60000),
+  TRANSFORM_HISTORY_RETENTION_DAYS: Joi.number()
+    .integer()
+    .min(1)
+    .optional()
+    .default(90),
+  TRANSFORM_HISTORY_CLEANUP_ENABLED: Joi.boolean().optional().default(true),
+  TRANSFORM_HISTORY_CLEANUP_INTERVAL_MS: Joi.number()
+    .integer()
+    .min(1000)
+    .optional()
+    .default(60 * 60 * 1000),
+  TRANSFORM_HISTORY_CLEANUP_BATCH_SIZE: Joi.number()
+    .integer()
+    .min(1)
+    .max(1000)
+    .optional()
+    .default(100),
+
+  /**
    * SMTP options (used to deliver confirmation emails)
    */
   SMTP_HOST: Joi.string().allow('').optional(),

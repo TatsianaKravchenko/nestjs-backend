@@ -34,6 +34,8 @@ const bigintAsNumber = {
  */
 @Entity('transformations')
 @Index('IDX_transformations_user_created_id', ['userId', 'createdAt', 'id'])
+// Retention cleanup selects by `created_at` alone, across all users.
+@Index('IDX_transformations_created_at', ['createdAt'])
 @Check('CHK_transformations_sizes', '"input_size" >= 0 AND "duration_ms" >= 0')
 @Check(
   'CHK_transformations_outcome',

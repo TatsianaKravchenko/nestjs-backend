@@ -118,6 +118,14 @@ export interface Config {
   TRANSFORM_JPEG_MAX_INPUT_BYTES?: number;
   /** Input limit of SVG files. */
   TRANSFORM_SVG_MAX_INPUT_BYTES?: number;
+  /** History endpoints: requests per user in each window. */
+  TRANSFORM_HISTORY_RATE_LIMIT?: number;
+  TRANSFORM_HISTORY_RATE_WINDOW_MS?: number;
+  /** History retention: rows older than this many days are deleted. */
+  TRANSFORM_HISTORY_RETENTION_DAYS?: number;
+  TRANSFORM_HISTORY_CLEANUP_ENABLED?: boolean;
+  TRANSFORM_HISTORY_CLEANUP_INTERVAL_MS?: number;
+  TRANSFORM_HISTORY_CLEANUP_BATCH_SIZE?: number;
 
   /**
    * SMTP options (used to deliver confirmation emails)
