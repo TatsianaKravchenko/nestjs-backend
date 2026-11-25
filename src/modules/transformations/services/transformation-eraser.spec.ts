@@ -7,12 +7,12 @@ const USER_ID = '3f2b9c1e-6a1d-4c57-9a3f-0d2f7b1c8e44';
 
 describe('TransformationEraser', () => {
   const query = jest.fn();
-  const results = { delete: jest.fn() };
+  const cleaner = { remove: jest.fn() };
   const registry = new UserEraserRegistry();
   const eraser = new TransformationEraser(
     { query } as never,
     registry,
-    results as never,
+    cleaner as never,
   );
 
   beforeEach(() => jest.resetAllMocks());
@@ -40,7 +40,7 @@ describe('TransformationEraser', () => {
       order.push('delete-rows');
       return Promise.resolve([]);
     });
-    results.delete.mockImplementation((key: string) => {
+    cleaner.remove.mockImplementation((key: string) => {
       order.push(`object:${key}`);
       return Promise.resolve('deleted');
     });
@@ -58,7 +58,7 @@ describe('TransformationEraser', () => {
 
   it('a missing object counts as deleted', async () => {
     query.mockResolvedValueOnce([{ storageKey: 'gone' }]).mockResolvedValue([]);
-    results.delete.mockResolvedValue('not_found');
+    cleaner.remove.mockResolvedValue('not_found');
 
     await expect(eraser.erase(USER_ID)).resolves.toEqual({
       status: 'succeeded',
@@ -67,7 +67,7 @@ describe('TransformationEraser', () => {
 
   it('keeps the history rows and asks for a retry while the storage is unavailable', async () => {
     query.mockResolvedValueOnce([{ storageKey: 'a' }, { storageKey: 'b' }]);
-    results.delete
+    cleaner.remove
       .mockResolvedValueOnce('unavailable')
       .mockResolvedValueOnce('deleted');
 
@@ -76,7 +76,7 @@ describe('TransformationEraser', () => {
       code: 'storage_unavailable',
     });
 
-    expect(results.delete).toHaveBeenCalledTimes(2);
+    expect(cleaner.remove).toHaveBeenCalledTimes(2);
     expect(query).toHaveBeenCalledTimes(1);
   });
 
@@ -89,7 +89,7 @@ describe('TransformationEraser', () => {
     await expect(eraser.erase(USER_ID)).resolves.toEqual({
       status: 'succeeded',
     });
-    expect(results.delete).not.toHaveBeenCalled();
+    expect(cleaner.remove).not.toHaveBeenCalled();
   });
 
   it('lets a database error through for the worker to retry', async () => {

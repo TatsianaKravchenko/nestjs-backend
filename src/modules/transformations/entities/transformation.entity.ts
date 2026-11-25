@@ -20,6 +20,18 @@ export enum TransformationStatus {
   ERROR = 'error',
 }
 
+/**
+ * Whether a `save=true` result is kept in permanent storage. `not_requested`
+ * is also the state after the retention cleanup removed an expired file.
+ */
+export enum StorageStatus {
+  NOT_REQUESTED = 'not_requested',
+  /** Staged under `stored_file_key`; the background upload has not finished. */
+  PENDING = 'pending',
+  AVAILABLE = 'available',
+  ERROR = 'error',
+}
+
 const bigintAsNumber = {
   to: (value: number | null): number | null => value,
   from: (value: string | null): number | null =>
@@ -40,6 +52,14 @@ const bigintAsNumber = {
 @Check(
   'CHK_transformations_outcome',
   `("status" = 'success' AND "output_size" IS NOT NULL AND "output_size" >= 0 AND "error_code" IS NULL) OR ("status" = 'error' AND "output_size" IS NULL AND "error_code" IS NOT NULL)`,
+)
+// The upload worker selects `pending` rows; the retention cleanup selects
+// `available` rows by `stored_file_until`.
+@Index('IDX_transformations_storage_status', ['storageStatus'])
+@Index('IDX_transformations_stored_file_until', ['storedFileUntil'])
+@Check(
+  'CHK_transformations_storage',
+  `("storage_status" = 'not_requested' AND "stored_file_key" IS NULL AND "stored_file_until" IS NULL AND "storage_error_code" IS NULL) OR ("storage_status" = 'pending' AND "stored_file_key" IS NOT NULL AND "stored_file_until" IS NULL AND "storage_error_code" IS NULL) OR ("storage_status" = 'available' AND "stored_file_key" IS NOT NULL AND "stored_file_until" IS NOT NULL AND "storage_error_code" IS NULL) OR ("storage_status" = 'error' AND "stored_file_until" IS NULL AND "storage_error_code" IS NOT NULL)`,
 )
 export class Transformation {
   @PrimaryGeneratedColumn('uuid')
@@ -91,4 +111,33 @@ export class Transformation {
 
   @Column({ name: 'completed_at', type: 'timestamptz' })
   completedAt!: Date;
+
+  @Column({
+    name: 'storage_status',
+    type: 'enum',
+    enum: StorageStatus,
+    default: StorageStatus.NOT_REQUESTED,
+  })
+  storageStatus!: StorageStatus;
+
+  /** Random server-generated key (no user id, e-mail or file name); never exposed. */
+  @Column({
+    name: 'stored_file_key',
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+  })
+  storedFileKey!: string | null;
+
+  @Column({ name: 'stored_file_until', type: 'timestamptz', nullable: true })
+  storedFileUntil!: Date | null;
+
+  /** Short safe code of the last storage failure; never exposed. */
+  @Column({
+    name: 'storage_error_code',
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+  })
+  storageErrorCode!: string | null;
 }

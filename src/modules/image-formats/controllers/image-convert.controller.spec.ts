@@ -55,6 +55,7 @@ const setup = (options: Options = {}) => {
     extension: 'jpeg',
     size: 1,
     stream: resultStream,
+    saveStatus: 'not_requested',
   });
   const rejectAttempt = jest
     .fn()
@@ -153,7 +154,7 @@ describe('ImageConvertController', () => {
       'x-content-type-options': 'nosniff',
       'cache-control': 'no-store',
       'x-transformation-id': 'id-1',
-      'x-storage-status': 'none',
+      'x-save-status': 'not_requested',
     });
     expect(sent.body).toBe(resultStream);
   });

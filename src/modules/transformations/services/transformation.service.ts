@@ -1,4 +1,4 @@
-import { HttpException, Inject, Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { randomBytes, randomUUID } from 'crypto';
 import { createReadStream, createWriteStream } from 'fs';
 import { stat } from 'fs/promises';
@@ -8,10 +8,10 @@ import { pipeline } from 'stream/promises';
 import { setTimeout as sleep } from 'timers/promises';
 
 import {
+  StorageStatus,
   TransformationStatus,
   TransformationType,
 } from '../entities/transformation.entity';
-import { StorageStatus } from '../entities/transformation-object.entity';
 import { ByteLimit, ByteLimitError } from '../utils/byte-limit';
 import {
   isContentType,
@@ -34,7 +34,7 @@ import {
   type ConverterParams,
 } from './converter';
 import { ConverterRegistry } from './converter.registry';
-import { RESULT_STORE, type ResultStore } from './result-store';
+import { StagingStore } from './staging-store';
 import { TempStorageService, type Workspace } from './temp-storage.service';
 import {
   type AttemptRecord,
@@ -63,7 +63,7 @@ export interface ConvertCommand {
   input: Readable;
   /** True when the HTTP layer cut the upload at its own limit (multipart `truncated`). */
   isTruncated?: () => boolean;
-  /** `save=true`: keep a copy for background persistence (task 2.4). */
+  /** `save=true`: stage a copy for the background upload to permanent storage. */
   save?: boolean;
 }
 
@@ -74,8 +74,8 @@ export interface ConvertResult {
   size: number;
   /** The whole result. Its temp files are removed when the stream closes. */
   stream: Readable;
-  /** Set only for `save=true`. */
-  storageStatus?: 'pending' | 'failed';
+  /** `X-Save-Status`: `not_requested` without `save=true`, else `pending` or `error`. */
+  saveStatus: 'not_requested' | 'pending' | 'error';
 }
 
 type AttemptOutcome =
@@ -137,7 +137,7 @@ export class TransformationService {
     private readonly temp: TempStorageService,
     private readonly history: TransformationHistoryService,
     private readonly audit: TransformationAuditService,
-    @Inject(RESULT_STORE) private readonly store: ResultStore,
+    private readonly staging: StagingStore,
   ) {}
 
   async convert(cmd: ConvertCommand): Promise<ConvertResult> {
@@ -177,8 +177,8 @@ export class TransformationService {
       const completedAt = new Date();
       const durationMs = Math.max(0, Math.round(performance.now() - t0));
 
-      const object =
-        attempt.ok && cmd.save ? await this.retain(workspace) : undefined;
+      const storage =
+        attempt.ok && cmd.save ? await this.stage(workspace) : undefined;
       const record: AttemptRecord = {
         id: ctx.id,
         userId: cmd.userId,
@@ -194,12 +194,12 @@ export class TransformationService {
         errorCode: attempt.ok ? null : attempt.code,
         createdAt: startedAt,
         completedAt,
-        object,
+        storage,
       };
       try {
         await this.history.record(record);
       } catch {
-        if (object) await this.store.delete(object.key);
+        if (storage?.key) await this.staging.remove(storage.key);
         throw this.reject(
           ctx,
           'history_unavailable',
@@ -236,9 +236,11 @@ export class TransformationService {
         extension: attempt.extension,
         size: attempt.size,
         stream: this.resultStream(workspace),
-        ...(object
-          ? { storageStatus: object.status as 'pending' | 'failed' }
-          : {}),
+        saveStatus: storage
+          ? storage.status === StorageStatus.PENDING
+            ? 'pending'
+            : 'error'
+          : 'not_requested',
       };
     } finally {
       if (!handedOver) await workspace.dispose();
@@ -468,16 +470,27 @@ export class TransformationService {
     ]);
   }
 
-  /** `save=true`: keeps a copy for the background write; a failure is recorded, not fatal. */
-  private async retain(
-    workspace: Workspace,
-  ): Promise<{ key: string; status: StorageStatus }> {
+  /**
+   * `save=true`: puts a copy in the staging area under a fresh random key
+   * (192 bits: no user id, e-mail or file name). The response does not wait for
+   * permanent storage. When staging fails the result is still returned and the
+   * row records `error` (and no key, as nothing was stored under it).
+   */
+  private async stage(workspace: Workspace): Promise<{
+    status: StorageStatus;
+    key: string | null;
+    errorCode: string | null;
+  }> {
     const key = newResultKey();
     try {
-      await this.store.retain(key, workspace.outputPath);
-      return { key, status: StorageStatus.PENDING };
+      await this.staging.stage(key, workspace.outputPath);
+      return { status: StorageStatus.PENDING, key, errorCode: null };
     } catch {
-      return { key, status: StorageStatus.FAILED };
+      return {
+        status: StorageStatus.ERROR,
+        key: null,
+        errorCode: 'staging_failed',
+      };
     }
   }
 

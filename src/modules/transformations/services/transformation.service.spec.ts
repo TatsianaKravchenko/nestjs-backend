@@ -6,8 +6,10 @@ import { join } from 'path';
 import { Readable } from 'stream';
 import { pipeline } from 'stream/promises';
 
-import { TransformationStatus } from '../entities/transformation.entity';
-import { StorageStatus } from '../entities/transformation-object.entity';
+import {
+  StorageStatus,
+  TransformationStatus,
+} from '../entities/transformation.entity';
 import {
   ConverterFailure,
   type ConversionRequest,
@@ -15,7 +17,7 @@ import {
   type ConverterErrorCode,
 } from './converter';
 import { ConverterRegistry } from './converter.registry';
-import type { ResultStore } from './result-store';
+import type { StagingStore } from './staging-store';
 import { TempStorageService } from './temp-storage.service';
 import type { TransformationAuditService } from './transformation-audit.service';
 import type {
@@ -73,7 +75,7 @@ describe('TransformationService', () => {
   let temp: TempStorageService;
   let history: { record: jest.Mock };
   let audit: { info: jest.Mock; warn: jest.Mock; error: jest.Mock };
-  let store: { retain: jest.Mock; delete: jest.Mock };
+  let staging: { stage: jest.Mock; remove: jest.Mock };
   let service: TransformationService;
 
   beforeEach(async () => {
@@ -89,16 +91,16 @@ describe('TransformationService', () => {
     temp = new TempStorageService(config as never);
     history = { record: jest.fn().mockResolvedValue(undefined) };
     audit = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
-    store = {
-      retain: jest.fn().mockResolvedValue(undefined),
-      delete: jest.fn().mockResolvedValue('deleted'),
+    staging = {
+      stage: jest.fn().mockResolvedValue(undefined),
+      remove: jest.fn().mockResolvedValue(true),
     };
     service = new TransformationService(
       registry,
       temp,
       history as unknown as TransformationHistoryService,
       audit as unknown as TransformationAuditService,
-      store as unknown as ResultStore,
+      staging as unknown as StagingStore,
     );
   });
 
@@ -164,8 +166,9 @@ describe('TransformationService', () => {
       expect(record.completedAt.getTime()).toBeGreaterThanOrEqual(
         record.createdAt.getTime(),
       );
-      expect(record.object).toBeUndefined();
-      expect(result.storageStatus).toBeUndefined();
+      expect(record.storage).toBeUndefined();
+      expect(result.saveStatus).toBe('not_requested');
+      expect(staging.stage).not.toHaveBeenCalled();
       expect(audit.info).toHaveBeenCalledWith(
         'transformation.completed',
         expect.objectContaining({ result: 'success', status: 200 }),
@@ -565,14 +568,14 @@ describe('TransformationService', () => {
       await expectTempEmpty();
     });
 
-    it('removes the retained copy when the history write fails', async () => {
+    it('removes the staged copy when the history write fails', async () => {
       registry.register(echo());
       history.record.mockRejectedValue(new Error('down'));
 
       await rejection(service.convert(command({ save: true })));
 
-      const key = store.retain.mock.calls[0][0] as string;
-      expect(store.delete).toHaveBeenCalledWith(key);
+      const key = staging.stage.mock.calls[0][0] as string;
+      expect(staging.remove).toHaveBeenCalledWith(key);
       await expectTempEmpty();
     });
   });
@@ -658,31 +661,37 @@ describe('TransformationService', () => {
   });
 
   describe('save=true', () => {
-    it('keeps a copy under an opaque key and reports pending without waiting for storage', async () => {
+    it('stages a copy under an opaque key and reports pending without waiting for storage', async () => {
       registry.register(echo());
 
       const result = await service.convert(command({ save: true }));
 
-      expect(result.storageStatus).toBe('pending');
-      const [key, path] = store.retain.mock.calls[0] as [string, string];
+      expect(result.saveStatus).toBe('pending');
+      const [key, path] = staging.stage.mock.calls[0] as [string, string];
       expect(key).toMatch(/^[A-Za-z0-9_-]{32}$/);
+      expect(key).not.toContain(USER_ID);
       expect(path.startsWith(base)).toBe(true);
-      expect(lastRecord().object).toEqual({
-        key,
+      expect(lastRecord().storage).toEqual({
         status: StorageStatus.PENDING,
+        key,
+        errorCode: null,
       });
       expect(await readAll(result.stream)).toBe(BODY);
       await expectTempEmpty();
     });
 
-    it('still returns the result when the copy cannot be retained, marked failed', async () => {
+    it('still returns the result when staging fails, recorded as error without a key', async () => {
       registry.register(echo());
-      store.retain.mockRejectedValue(new Error('disk full'));
+      staging.stage.mockRejectedValue(new Error('disk full'));
 
       const result = await service.convert(command({ save: true }));
 
-      expect(result.storageStatus).toBe('failed');
-      expect(lastRecord().object?.status).toBe(StorageStatus.FAILED);
+      expect(result.saveStatus).toBe('error');
+      expect(lastRecord().storage).toEqual({
+        status: StorageStatus.ERROR,
+        key: null,
+        errorCode: 'staging_failed',
+      });
       result.stream.destroy();
       await expectTempEmpty();
     });
@@ -691,7 +700,7 @@ describe('TransformationService', () => {
       registry.register(echo());
       const result = await service.convert(command());
       result.stream.destroy();
-      expect(store.retain).not.toHaveBeenCalled();
+      expect(staging.stage).not.toHaveBeenCalled();
 
       registry.register(
         converter(() => Promise.resolve({ ok: false, code: 'invalid_input' }), {
@@ -701,7 +710,7 @@ describe('TransformationService', () => {
       await rejection(
         service.convert(command({ sourceFormat: 'xml', save: true })),
       );
-      expect(store.retain).not.toHaveBeenCalled();
+      expect(staging.stage).not.toHaveBeenCalled();
       await expectTempEmpty();
     });
   });

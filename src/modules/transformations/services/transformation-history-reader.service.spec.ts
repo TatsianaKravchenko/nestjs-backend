@@ -27,6 +27,8 @@ const row = (n: number, overrides: Record<string, unknown> = {}) => ({
   error_code: null,
   created_at: new Date('2026-01-02T03:04:05.123Z'),
   created_at_us: '2026-01-02T03:04:05.123456Z',
+  storage_status: 'not_requested',
+  stored_file_until: null,
   ...overrides,
 });
 
@@ -94,6 +96,64 @@ describe('TransformationHistoryReader', () => {
       },
     ]);
     expect(JSON.stringify(items)).not.toMatch(/user|email|storage_key|name/i);
+  });
+
+  describe('storage projection', () => {
+    const project = async (overrides: Record<string, unknown>) => {
+      manager.query
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([row(1, overrides)]);
+      const { items } = await reader.list(ctx, q());
+      return items[0];
+    };
+    const future = new Date(Date.now() + 86_400_000);
+
+    it('reports an available file with its expiry', async () => {
+      const item = await project({
+        storage_status: 'available',
+        stored_file_until: future,
+        stored_file_key: 'SECRET-KEY',
+        storage_error_code: 'secret_code',
+      });
+      expect(item).toMatchObject({
+        storageStatus: 'available',
+        hasStoredFile: true,
+        fileExpiresAt: future.toISOString(),
+      });
+      expect(JSON.stringify(item)).not.toMatch(/SECRET|secret_code|key/i);
+    });
+
+    it.each(['pending', 'error', 'not_requested'])(
+      'reports %s without a file',
+      async (storage_status) => {
+        expect(
+          await project({ storage_status, stored_file_until: future }),
+        ).toMatchObject({
+          storageStatus: storage_status,
+          hasStoredFile: false,
+          fileExpiresAt: null,
+        });
+      },
+    );
+
+    it('reports an expired available file as not_requested', async () => {
+      expect(
+        await project({
+          storage_status: 'available',
+          stored_file_until: new Date(Date.now() - 1000),
+        }),
+      ).toMatchObject({
+        storageStatus: 'not_requested',
+        hasStoredFile: false,
+        fileExpiresAt: null,
+      });
+    });
+
+    it('reports an available file without an expiry as not_requested', async () => {
+      expect(
+        await project({ storage_status: 'available', stored_file_until: null }),
+      ).toMatchObject({ storageStatus: 'not_requested', hasStoredFile: false });
+    });
   });
 
   it('does not select user_id or touch the stored-object table', async () => {

@@ -10,7 +10,7 @@ const settings: Record<string, unknown> = {
 
 describe('HistoryRetentionWorker', () => {
   const query = jest.fn();
-  const results = { delete: jest.fn() };
+  const cleaner = { remove: jest.fn() };
   const audit = { info: jest.fn(), error: jest.fn() };
   const config = { get: (key: string) => settings[key] };
   let worker: HistoryRetentionWorker;
@@ -22,7 +22,7 @@ describe('HistoryRetentionWorker', () => {
       { query } as never,
       config as never,
       audit as never,
-      results as never,
+      cleaner as never,
     );
   });
 
@@ -40,8 +40,8 @@ describe('HistoryRetentionWorker', () => {
     query.mockResolvedValueOnce([]);
     await expect(worker.run(NOW)).resolves.toEqual({ deleted: 0, skipped: 0 });
     const [sql, params] = query.mock.calls[0] as [string, unknown[]];
-    expect(sql).toContain('t.created_at < $1');
-    expect(sql).toContain('ORDER BY t.created_at ASC');
+    expect(sql).toContain('created_at < $1');
+    expect(sql).toContain('ORDER BY created_at ASC');
     expect(params[0]).toEqual(new Date('2026-01-01T00:00:00.000Z'));
     expect(params[1]).toBe(2);
     expect(audit.info).not.toHaveBeenCalled();
@@ -73,7 +73,7 @@ describe('HistoryRetentionWorker', () => {
         order.push('delete-rows-2');
         return Promise.resolve([]);
       });
-    results.delete.mockImplementation((key: string) => {
+    cleaner.remove.mockImplementation((key: string) => {
       order.push(`object:${key}`);
       return Promise.resolve('deleted');
     });
@@ -97,7 +97,7 @@ describe('HistoryRetentionWorker', () => {
     query
       .mockResolvedValueOnce([{ id: 'a', storageKey: 'gone' }])
       .mockResolvedValueOnce([]);
-    results.delete.mockResolvedValue('not_found');
+    cleaner.remove.mockResolvedValue('not_found');
     await expect(worker.run(NOW)).resolves.toEqual({ deleted: 1, skipped: 0 });
     expect(deletes()[0][1]).toEqual([['a']]);
   });
@@ -110,7 +110,7 @@ describe('HistoryRetentionWorker', () => {
       ])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ id: 'a', storageKey: 'bad' }]);
-    results.delete.mockImplementation((key: string) =>
+    cleaner.remove.mockImplementation((key: string) =>
       Promise.resolve(key === 'bad' ? 'unavailable' : 'deleted'),
     );
     const result = await worker.run(NOW);
@@ -127,7 +127,7 @@ describe('HistoryRetentionWorker', () => {
       { id: 'a', storageKey: 'bad' },
       { id: 'b', storageKey: 'bad' },
     ]);
-    results.delete.mockResolvedValue('unavailable');
+    cleaner.remove.mockResolvedValue('unavailable');
     await expect(worker.run(NOW)).resolves.toEqual({ deleted: 0, skipped: 2 });
     expect(query).toHaveBeenCalledTimes(1);
     expect(deletes()).toHaveLength(0);
@@ -137,7 +137,7 @@ describe('HistoryRetentionWorker', () => {
     query
       .mockResolvedValueOnce([{ id: 'a', storageKey: 'SECRET-KEY-123' }])
       .mockResolvedValueOnce([]);
-    results.delete.mockResolvedValue('deleted');
+    cleaner.remove.mockResolvedValue('deleted');
     await worker.run(NOW);
     expect(JSON.stringify(audit.info.mock.calls)).not.toContain('SECRET');
   });

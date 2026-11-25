@@ -118,4 +118,75 @@ describe('TransformationAuditService', () => {
     expect(entry).not.toHaveProperty('durationMs');
     expect(entry.outputSize).toBeNull();
   });
+
+  describe('storage()', () => {
+    const fields = {
+      requestId: 'req-1',
+      userId: '3f2b9c1e-6a1d-4c57-9a3f-0d2f7b1c8e44',
+      actorUserId: '9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d',
+      transformationId: '9b2f6a52-0f0c-4d1e-8a35-5b9e0f6c7a11',
+      action: 'download' as const,
+      size: 42,
+      outcome: 'success' as const,
+      errorCode: 'storage_unavailable',
+      durationMs: 7,
+    };
+
+    it.each([
+      ['log', () => log],
+      ['warn', () => warn],
+      ['error', () => error],
+    ] as const)('writes at level %s', (level, spy) => {
+      service.storage(level, 'transformation.stored_file.download', fields);
+      expect(spy()).toHaveBeenCalledWith({
+        event: 'transformation.stored_file.download',
+        ...fields,
+      });
+    });
+
+    it('logs only the allow-listed fields: a key or path cannot leak', () => {
+      service.storage('log', 'x', {
+        ...fields,
+        key: 'SECRET-KEY-0123456789',
+        path: '/srv/private/path',
+        storedFileKey: 'SECRET-KEY-0123456789',
+      } as never);
+      const entry = (log.mock.calls as unknown[][])[0][0] as Record<
+        string,
+        unknown
+      >;
+      expect(Object.keys(entry).sort()).toEqual(
+        [
+          'event',
+          'requestId',
+          'userId',
+          'actorUserId',
+          'transformationId',
+          'action',
+          'size',
+          'outcome',
+          'errorCode',
+          'durationMs',
+        ].sort(),
+      );
+      expect(JSON.stringify(entry)).not.toMatch(/SECRET|private/);
+    });
+
+    it('replaces an unsafe string with ? and skips undefined and non-finite numbers', () => {
+      service.storage('warn', 'x', {
+        action: 'save',
+        outcome: 'error',
+        errorCode: '/var/data/file name.csv',
+        size: Number.POSITIVE_INFINITY,
+        durationMs: 1,
+      });
+      expect((warn.mock.calls as unknown[][])[0][0]).toEqual({
+        event: 'x',
+        action: 'save',
+        outcome: 'error',
+        errorCode: '?',
+        durationMs: 1,
+      });
+    });
+  });
 });

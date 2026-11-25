@@ -1,12 +1,9 @@
 import {
+  StorageStatus,
   Transformation,
   TransformationStatus,
   TransformationType,
 } from '../entities/transformation.entity';
-import {
-  StorageStatus,
-  TransformationObject,
-} from '../entities/transformation-object.entity';
 import {
   type AttemptRecord,
   TransformationHistoryService,
@@ -57,22 +54,45 @@ describe('TransformationHistoryService', () => {
       durationMs: 5,
       errorCode: null,
       createdAt: attempt.createdAt,
+      storageStatus: StorageStatus.NOT_REQUESTED,
+      storedFileKey: null,
+      storageErrorCode: null,
       completedAt: attempt.completedAt,
     });
   });
 
-  it('writes the stored-object row with the same transaction for save=true', async () => {
+  it('defaults to not_requested with no key', async () => {
+    await service.record(attempt);
+
+    expect(insert).toHaveBeenCalledWith(
+      Transformation,
+      expect.objectContaining({
+        storageStatus: StorageStatus.NOT_REQUESTED,
+        storedFileKey: null,
+        storageErrorCode: null,
+      }),
+    );
+  });
+
+  it('writes the storage state of a save=true result in the same row', async () => {
     await service.record({
       ...attempt,
-      object: { key: 'opaque-key', status: StorageStatus.PENDING },
+      storage: {
+        status: StorageStatus.PENDING,
+        key: 'opaque-key',
+        errorCode: null,
+      },
     });
 
-    expect(insert).toHaveBeenCalledTimes(2);
-    expect(insert).toHaveBeenLastCalledWith(TransformationObject, {
-      transformationId: attempt.id,
-      storageKey: 'opaque-key',
-      storageStatus: 'pending',
-    });
+    expect(insert).toHaveBeenCalledTimes(1);
+    expect(insert).toHaveBeenCalledWith(
+      Transformation,
+      expect.objectContaining({
+        storageStatus: 'pending',
+        storedFileKey: 'opaque-key',
+        storageErrorCode: null,
+      }),
+    );
   });
 
   it('records an error attempt without output', async () => {

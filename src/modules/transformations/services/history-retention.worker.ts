@@ -1,15 +1,10 @@
-import {
-  Inject,
-  Injectable,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 import { ConfigService } from '@/core/config/config.service';
 import { AuthAuditService } from '@/modules/auth/services/auth-audit.service';
 
-import { RESULT_STORE, type ResultStore } from './result-store';
+import { StoredFileCleaner } from './stored-file-cleaner';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 /** Upper bound of batches per run, so one run cannot hold the worker forever. */
@@ -43,7 +38,7 @@ export class HistoryRetentionWorker implements OnModuleInit, OnModuleDestroy {
     private readonly dataSource: DataSource,
     private readonly config: ConfigService,
     private readonly audit: AuthAuditService,
-    @Inject(RESULT_STORE) private readonly results: ResultStore,
+    private readonly cleaner: StoredFileCleaner,
   ) {}
 
   onModuleInit(): void {
@@ -110,11 +105,10 @@ export class HistoryRetentionWorker implements OnModuleInit, OnModuleDestroy {
 
   private expired(cutoff: Date, limit: number): Promise<ExpiredRow[]> {
     return this.dataSource.query(
-      `SELECT t.id AS id, o.storage_key AS "storageKey"
-         FROM transformations t
-         LEFT JOIN transformation_objects o ON o.transformation_id = t.id
-        WHERE t.created_at < $1
-        ORDER BY t.created_at ASC, t.id ASC
+      `SELECT id, stored_file_key AS "storageKey"
+         FROM transformations
+        WHERE created_at < $1
+        ORDER BY created_at ASC, id ASC
         LIMIT $2`,
       [cutoff, limit],
     );
@@ -125,7 +119,7 @@ export class HistoryRetentionWorker implements OnModuleInit, OnModuleDestroy {
     let skipped = 0;
     for (const row of rows) {
       if (row.storageKey !== null) {
-        const outcome = await this.results.delete(row.storageKey);
+        const outcome = await this.cleaner.remove(row.storageKey);
         if (outcome === 'unavailable') {
           skipped += 1;
           continue;
@@ -134,7 +128,6 @@ export class HistoryRetentionWorker implements OnModuleInit, OnModuleDestroy {
       removable.push(row.id);
     }
     if (removable.length > 0) {
-      // The object rows follow their transformation (ON DELETE CASCADE).
       await this.dataSource.query(
         'DELETE FROM transformations WHERE id = ANY($1::uuid[])',
         [removable],

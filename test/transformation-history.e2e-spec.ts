@@ -269,10 +269,12 @@ describe('Transformation history (e2e)', () => {
       { id: rowId(101), createdAt: '2026-03-10T10:00:00Z' },
       { id: rowId(102), createdAt: '2026-03-11T10:00:00Z' },
     ]);
-    // A stored-object row exists for one of the owner's rows: it must not leak.
+    // One of the owner's rows has a stored file: its key must not leak.
     await app.db.query(
-      `INSERT INTO transformation_objects (transformation_id, storage_key, storage_status)
-       VALUES ($1, 'SECRET-STORAGE-KEY-0123456789', 'stored')`,
+      `UPDATE transformations SET storage_status = 'available',
+         stored_file_key = 'SECRET-STORAGE-KEY-0123456789',
+         stored_file_until = '2999-01-01T00:00:00Z'
+       WHERE id = $1`,
       [rowId(6)],
     );
   });
@@ -325,9 +327,9 @@ describe('Transformation history (e2e)', () => {
         durationMs: 12,
         errorCode: null,
         createdAt: '2026-03-03T10:00:00.000Z',
-        storageStatus: 'not_requested',
-        hasStoredFile: false,
-        fileExpiresAt: null,
+        storageStatus: 'available',
+        hasStoredFile: true,
+        fileExpiresAt: '2999-01-01T00:00:00.000Z',
       });
       expect(body.items[2]).toMatchObject({
         status: 'error',
@@ -639,9 +641,9 @@ describe('Transformation history (e2e)', () => {
       const body = page(res);
       expect(body.items.map((i) => i.id)).toEqual([rowId(6), rowId(5)]);
       expect(body.items[0]).toMatchObject({
-        storageStatus: 'not_requested',
-        hasStoredFile: false,
-        fileExpiresAt: null,
+        storageStatus: 'available',
+        hasStoredFile: true,
+        fileExpiresAt: '2999-01-01T00:00:00.000Z',
       });
       expect(res.body).not.toContain(owner.email);
       expect(res.body).not.toContain('SECRET');
@@ -740,21 +742,25 @@ describe('Transformation history (e2e)', () => {
       (await app.db.query('SELECT 1 FROM transformations WHERE id = $1', [id]))
         .length > 0;
 
+    const markStored = (id: string, key: string) =>
+      app.db.query(
+        `UPDATE transformations SET storage_status = 'available',
+           stored_file_key = $2, stored_file_until = '2999-01-01T00:00:00Z'
+         WHERE id = $1`,
+        [id, key],
+      );
+
     it('deletes rows older than 90 days (with their stored file) and keeps newer ones', async () => {
       const key = `retention-key-${RUN}-aaaaaaaaaaaa`;
-      await mkdir(join(storageDir, 'pending'), { recursive: true });
-      await writeFile(join(storageDir, 'pending', key), 'data');
+      await mkdir(join(storageDir, 'objects'), { recursive: true });
+      await writeFile(join(storageDir, 'objects', key), 'data');
 
       await seed(victim.id, [
         { id: rowId(201), createdAt: '2001-01-01T00:00:00Z' }, // 151 days old
         { id: rowId(202), createdAt: '2001-02-01T00:00:00Z' }, // 120 days old, stored file
         { id: rowId(203), createdAt: '2001-03-15T00:00:00Z' }, // 78 days old: kept
       ]);
-      await app.db.query(
-        `INSERT INTO transformation_objects (transformation_id, storage_key, storage_status)
-         VALUES ($1, $2, 'stored')`,
-        [rowId(202), key],
-      );
+      await markStored(rowId(202), key);
 
       const result = await worker.run(NOW);
 
@@ -762,24 +768,14 @@ describe('Transformation history (e2e)', () => {
       expect(await exists(rowId(201))).toBe(false);
       expect(await exists(rowId(202))).toBe(false);
       expect(await exists(rowId(203))).toBe(true);
-      expect(existsSync(join(storageDir, 'pending', key))).toBe(false);
-      expect(
-        await app.db.query(
-          'SELECT 1 FROM transformation_objects WHERE storage_key = $1',
-          [key],
-        ),
-      ).toHaveLength(0);
+      expect(existsSync(join(storageDir, 'objects', key))).toBe(false);
     });
 
     it('treats a stored file that is already gone as cleaned', async () => {
       await seed(victim.id, [
         { id: rowId(204), createdAt: '2001-01-02T00:00:00Z' },
       ]);
-      await app.db.query(
-        `INSERT INTO transformation_objects (transformation_id, storage_key, storage_status)
-         VALUES ($1, $2, 'stored')`,
-        [rowId(204), `retention-missing-${RUN}-bbbbbbbbbbbb`],
-      );
+      await markStored(rowId(204), `retention-missing-${RUN}-bbbbbbbbbbbb`);
       await expect(worker.run(NOW)).resolves.toEqual({
         deleted: 1,
         skipped: 0,

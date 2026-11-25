@@ -47,6 +47,7 @@ export enum ApiErrorCode {
   ConversionTimeout = 'conversion_timeout',
   UnsupportedConversion = 'unsupported_conversion',
   TransformationUnavailable = 'transformation_unavailable',
+  FileNotReady = 'file_not_ready',
 }
 
 export const TokenFailureReason = {
@@ -289,6 +290,10 @@ export const lastAccessManager = (): ConflictException =>
     ApiErrorCode.LastAccessManager,
     'At least one active user with rbac@manage must remain',
   );
+
+/** The saved file is still being stored; try again shortly. */
+export const fileNotReady = (): ConflictException =>
+  conflict(ApiErrorCode.FileNotReady, 'The file is not ready yet');
 
 export const payloadTooLarge = (message: string): PayloadTooLargeException =>
   new PayloadTooLargeException(

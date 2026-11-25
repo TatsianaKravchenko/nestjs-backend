@@ -1,14 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import {
+  StorageStatus,
   TransformationStatus,
   TransformationType,
 } from '../entities/transformation.entity';
 
 /**
- * One attempt. Metadata only: no user id, e-mail, file name, contents or
- * storage key. The three storage fields are fixed until the object storage
- * integration (task 2.4) fills them.
+ * One attempt. Metadata only: no user id, e-mail, file name, contents, storage
+ * key, path, bucket or internal storage error code.
  */
 export class TransformationHistoryItemDto {
   @ApiProperty({ format: 'uuid' })
@@ -41,13 +41,26 @@ export class TransformationHistoryItemDto {
   @ApiProperty({ format: 'date-time', description: 'UTC.' })
   createdAt!: string;
 
-  @ApiProperty({ enum: ['not_requested'] })
-  storageStatus!: 'not_requested';
+  @ApiProperty({
+    enum: StorageStatus,
+    description:
+      '`not_requested` without `save=true` (and after an expired file was removed), `pending` while the copy is being stored, `available`, or `error`.',
+  })
+  storageStatus!: StorageStatus;
 
-  @ApiProperty({ example: false })
-  hasStoredFile!: false;
+  @ApiProperty({
+    example: false,
+    description:
+      'True only when the file is `available` and can be downloaded.',
+  })
+  hasStoredFile!: boolean;
 
-  @ApiProperty({ type: String, nullable: true, example: null })
+  @ApiProperty({
+    type: String,
+    nullable: true,
+    format: 'date-time',
+    description: 'When the stored file is removed; null unless `available`.',
+  })
   fileExpiresAt!: string | null;
 }
 

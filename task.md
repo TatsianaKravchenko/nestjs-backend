@@ -49,5 +49,5 @@
 - [x] 2.3 Transformation History Service
   - **Spec**: [2.3 Transformation History Spec](https://github.com/pavel-skripko-innowise/inno-fe-be-a1/blob/main/courses-content/backend/A/1/ru/5.2.3%20%D0%9F%D1%80%D0%BE%D1%81%D0%BC%D0%BE%D1%82%D1%80%20%D0%B8%D1%81%D1%82%D0%BE%D1%80%D0%B8%D0%B8%20%D1%82%D1%80%D0%B0%D0%BD%D1%81%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%86%D0%B8%D0%B9%20%D1%84%D0%B0%D0%B9%D0%BB%D0%BE%D0%B2%20%D0%BF%D0%BE%D0%BB%D1%8C%D0%B7%D0%BE%D0%B2%D0%B0%D1%82%D0%B5%D0%BB%D1%8F.md)
 
-- [ ] 2.4 Object Storage Integration
-  - **Spec**: [2.4 Storage Integration Spec](https://github.com/pavel-skripko-innowise/inno-fe-be-a1/blob/main/courses-content/A/1/2.4%20%D0%A1%D0%BE%D1%85%D1%80%D0%B0%D0%BD%D0%B5%D0%BD%D0%B8%D0%B5%20%D1%80%D0%B5%D0%B7%D1%83%D0%BB%D1%8C%D1%82%D0%B0%D1%82%D0%BE%D0%B2%20%D1%82%D1%80%D0%B0%D0%BD%D1%81%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%86%D0%B8%D0%B9%20%D0%B2%20%D1%85%D1%80%D0%B0%D0%BD%D0%B8%D0%BB%D0%B8%D1%89%D0%B5.md)
+- [x] 2.4 Object Storage Integration
+  - **Spec**: [2.4 Storage Integration Spec](https://github.com/pavel-skripko-innowise/inno-fe-be-a1/blob/main/courses-content/backend/A/1/ru/5.2.4%20%D0%A1%D0%BE%D1%85%D1%80%D0%B0%D0%BD%D0%B5%D0%BD%D0%B8%D0%B5%20%D1%80%D0%B5%D0%B7%D1%83%D0%BB%D1%8C%D1%82%D0%B0%D1%82%D0%BE%D0%B2%20%D1%82%D1%80%D0%B0%D0%BD%D1%81%D1%84%D0%BE%D1%80%D0%BC%D0%B0%D1%86%D0%B8%D0%B9%20%D0%B2%20%D1%85%D1%80%D0%B0%D0%BD%D0%B8%D0%BB%D0%B8%D1%89%D0%B5.md)

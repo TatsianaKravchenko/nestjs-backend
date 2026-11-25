@@ -91,7 +91,7 @@ class ConvertTestController {
       .status(200)
       .header('content-type', result.contentType)
       .header('x-transformation-id', result.transformationId)
-      .header('x-storage-status', result.storageStatus ?? 'none')
+      .header('x-save-status', result.saveStatus)
       .send(result.stream);
   }
 }
@@ -446,6 +446,10 @@ describe('File transformations foundation (e2e)', () => {
           'output_size',
           'source_format',
           'status',
+          'storage_error_code',
+          'storage_status',
+          'stored_file_key',
+          'stored_file_until',
           'target_format',
           'type',
           'user_id',
@@ -554,23 +558,28 @@ describe('File transformations foundation (e2e)', () => {
   });
 
   describe('save=true', () => {
-    it('keeps an opaque copy as pending without delaying the response, and the eraser removes it', async () => {
+    it('stages an opaque copy as pending without delaying the response, and the eraser removes it', async () => {
       const userId = await createUser('save');
 
       const res = await convert(userId, { query: '?target=json&save=true' });
 
       expect(res.statusCode).toBe(200);
-      expect(res.headers['x-storage-status']).toBe('pending');
+      expect(res.headers['x-save-status']).toBe('pending');
       expect(res.body).toBe(BODY.toUpperCase());
-      const objects: { storage_key: string; storage_status: string }[] =
-        await app.db.query(
-          'SELECT * FROM transformation_objects WHERE transformation_id = $1',
-          [res.headers['x-transformation-id']],
-        );
-      expect(objects).toHaveLength(1);
-      expect(objects[0].storage_status).toBe('pending');
-      expect(objects[0].storage_key).toMatch(/^[A-Za-z0-9_-]{32}$/);
-      const copy = join(storageDir, 'pending', objects[0].storage_key);
+      const rows: {
+        storage_status: string;
+        stored_file_key: string;
+        stored_file_until: Date | null;
+        storage_error_code: string | null;
+      }[] = await app.db.query('SELECT * FROM transformations WHERE id = $1', [
+        res.headers['x-transformation-id'],
+      ]);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].storage_status).toBe('pending');
+      expect(rows[0].stored_file_key).toMatch(/^[A-Za-z0-9_-]{32}$/);
+      expect(rows[0].stored_file_until).toBeNull();
+      expect(rows[0].storage_error_code).toBeNull();
+      const copy = join(storageDir, 'pending', rows[0].stored_file_key);
       expect(existsSync(copy)).toBe(true);
       await expectTempEmpty();
 
@@ -580,12 +589,6 @@ describe('File transformations foundation (e2e)', () => {
       });
       expect(existsSync(copy)).toBe(false);
       expect(await history(userId)).toEqual([]);
-      expect(
-        await app.db.query(
-          'SELECT 1 FROM transformation_objects WHERE storage_key = $1',
-          [objects[0].storage_key],
-        ),
-      ).toEqual([]);
 
       // A repeated run is safe.
       await expect(eraser.erase(userId)).resolves.toEqual({
@@ -596,13 +599,15 @@ describe('File transformations foundation (e2e)', () => {
     it('stores nothing without the flag', async () => {
       const userId = await createUser('nosave');
       const res = await convert(userId, { query: '?target=json' });
-      expect(res.headers['x-storage-status']).toBe('none');
-      expect(
+      expect(res.headers['x-save-status']).toBe('not_requested');
+      const rows: { storage_status: string; stored_file_key: string | null }[] =
         await app.db.query(
-          'SELECT 1 FROM transformation_objects WHERE transformation_id = $1',
+          'SELECT storage_status, stored_file_key FROM transformations WHERE id = $1',
           [res.headers['x-transformation-id']],
-        ),
-      ).toEqual([]);
+        );
+      expect(rows).toEqual([
+        { storage_status: 'not_requested', stored_file_key: null },
+      ]);
     });
   });
 

@@ -58,7 +58,7 @@ const setup = (options: Options = {}) => {
     extension: 'json',
     size: 2,
     stream: resultStream,
-    storageStatus: 'pending',
+    saveStatus: 'pending',
   });
   const rejectAttempt = jest
     .fn()
@@ -155,7 +155,7 @@ describe('ConvertController', () => {
       'x-content-type-options': 'nosniff',
       'cache-control': 'no-store',
       'x-transformation-id': 'id-1',
-      'x-storage-status': 'pending',
+      'x-save-status': 'pending',
     });
     expect(sent.body).toBe(resultStream);
   });

@@ -13,9 +13,10 @@ import type {
   TransformationHistoryItemDto,
   TransformationHistoryResponseDto,
 } from '../dto/history-response.dto';
-import type {
-  TransformationStatus,
-  TransformationType,
+import {
+  StorageStatus,
+  type TransformationStatus,
+  type TransformationType,
 } from '../entities/transformation.entity';
 import {
   canonicalQuery,
@@ -31,7 +32,7 @@ export interface HistoryContext {
   targetUserId?: string;
 }
 
-/** Safe columns only: no `user_id`, and nothing from `transformation_objects`. */
+/** Safe columns only: no `user_id`, `stored_file_key` or `storage_error_code`. */
 interface HistoryRow {
   id: string;
   type: TransformationType;
@@ -44,6 +45,8 @@ interface HistoryRow {
   error_code: string | null;
   created_at: Date;
   created_at_us: string;
+  storage_status: StorageStatus;
+  stored_file_until: Date | null;
 }
 
 const QUERY_TIMEOUT_MS = 2000;
@@ -184,6 +187,7 @@ export class TransformationHistoryReader {
     }
     const sql = `SELECT id, type, source_format, target_format, status,
               input_size, output_size, duration_ms, error_code, created_at,
+              storage_status, stored_file_until,
               to_char(created_at AT TIME ZONE 'UTC', '${TIMESTAMP_FORMAT}') AS created_at_us
          FROM transformations
         WHERE ${where.join(' AND ')}
@@ -202,8 +206,21 @@ export class TransformationHistoryReader {
     }
   }
 
-  /** `storage*` fields are constants until task 2.4 (object storage). */
+  /**
+   * A file past its expiry is reported like a removed one (`not_requested`),
+   * even before the cleanup has cleared the row, so the list never offers a
+   * download that would be a 404.
+   */
   private project(row: HistoryRow): TransformationHistoryItemDto {
+    const until =
+      row.stored_file_until === null ? null : new Date(row.stored_file_until);
+    const expired =
+      row.storage_status === StorageStatus.AVAILABLE &&
+      (until === null || until.getTime() <= Date.now());
+    const storageStatus = expired
+      ? StorageStatus.NOT_REQUESTED
+      : row.storage_status;
+    const available = storageStatus === StorageStatus.AVAILABLE;
     return {
       id: row.id,
       type: row.type,
@@ -215,9 +232,9 @@ export class TransformationHistoryReader {
       durationMs: row.duration_ms,
       errorCode: row.error_code,
       createdAt: new Date(row.created_at).toISOString(),
-      storageStatus: 'not_requested',
-      hasStoredFile: false,
-      fileExpiresAt: null,
+      storageStatus,
+      hasStoredFile: available,
+      fileExpiresAt: available && until ? until.toISOString() : null,
     };
   }
 

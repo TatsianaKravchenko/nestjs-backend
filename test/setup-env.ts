@@ -4,3 +4,6 @@ process.env.NODE_ENV = 'development';
 process.env.USER_LIST_CURSOR_ACTIVE_KEY_ID ??= 'e2e';
 process.env.USER_LIST_CURSOR_HMAC_KEYS ??=
   'e2e:test-only-user-list-cursor-key-0123456789abcdef';
+
+process.env.TRANSFORM_UPLOAD_WORKER_ENABLED ??= 'false';
+process.env.TRANSFORM_STORED_FILE_CLEANUP_ENABLED ??= 'false';

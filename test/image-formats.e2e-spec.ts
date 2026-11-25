@@ -769,7 +769,7 @@ describe('Image transformation (e2e)', () => {
         ]),
       );
       expect(res.statusCode).toBe(200);
-      expect(['pending', 'failed']).toContain(res.headers['x-storage-status']);
+      expect(['pending', 'error']).toContain(res.headers['x-save-status']);
       await expectTempEmpty();
     });
 
@@ -779,7 +779,7 @@ describe('Image transformation (e2e)', () => {
         userId,
         upload('jpeg', png(await solid(4, 4, 'png'))),
       );
-      expect(res.headers['x-storage-status']).toBe('none');
+      expect(res.headers['x-save-status']).toBe('not_requested');
     });
   });
 });

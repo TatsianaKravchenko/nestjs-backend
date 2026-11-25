@@ -2,14 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 
 import {
+  StorageStatus,
   Transformation,
   TransformationStatus,
   TransformationType,
 } from '../entities/transformation.entity';
-import {
-  StorageStatus,
-  TransformationObject,
-} from '../entities/transformation-object.entity';
 
 export interface AttemptRecord {
   id: string;
@@ -24,13 +21,17 @@ export interface AttemptRecord {
   errorCode: string | null;
   createdAt: Date;
   completedAt: Date;
-  /** `save=true`: the key and the state of the stored copy. */
-  object?: { key: string; status: StorageStatus };
+  /** `save=true` on a success: the staged copy (pending) or why there is none (error). */
+  storage?: {
+    status: StorageStatus;
+    key: string | null;
+    errorCode: string | null;
+  };
 }
 
 /**
- * The mandatory history write. The row and the optional stored-object row
- * commit together. It throws when the database fails; the caller turns that
+ * The mandatory history write. The row carries the storage state of a saved
+ * result, so it is one insert. It throws when the database fails; the caller turns that
  * into a 503 and never returns the result.
  */
 @Injectable()
@@ -52,14 +53,10 @@ export class TransformationHistoryService {
         errorCode: attempt.errorCode,
         createdAt: attempt.createdAt,
         completedAt: attempt.completedAt,
+        storageStatus: attempt.storage?.status ?? StorageStatus.NOT_REQUESTED,
+        storedFileKey: attempt.storage?.key ?? null,
+        storageErrorCode: attempt.storage?.errorCode ?? null,
       });
-      if (attempt.object) {
-        await manager.insert(TransformationObject, {
-          transformationId: attempt.id,
-          storageKey: attempt.object.key,
-          storageStatus: attempt.object.status,
-        });
-      }
     });
   }
 }

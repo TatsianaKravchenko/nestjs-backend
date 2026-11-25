@@ -252,6 +252,63 @@ export const configValidationSchema = Joi.object<Config>({
     .default(100),
 
   /**
+   * Saved transformation results (task 2.4). The driver picks the permanent
+   * store: `local` (single-instance development, under TRANSFORM_STORAGE_DIR)
+   * or `s3` (any S3-compatible service; objects stay private). Staged copies
+   * wait in TRANSFORM_STORAGE_DIR/pending for the upload worker.
+   */
+  TRANSFORM_STORAGE_DRIVER: Joi.string()
+    .valid('local', 's3')
+    .optional()
+    .default('local'),
+  TRANSFORM_S3_BUCKET: Joi.string().when('TRANSFORM_STORAGE_DRIVER', {
+    is: 's3',
+    then: Joi.required(),
+    otherwise: Joi.allow('').optional(),
+  }),
+  TRANSFORM_S3_REGION: Joi.string().optional().default('us-east-1'),
+  TRANSFORM_S3_ENDPOINT: Joi.string().allow('').optional(),
+  TRANSFORM_S3_ACCESS_KEY_ID: Joi.string().allow('').optional(),
+  TRANSFORM_S3_SECRET_ACCESS_KEY: Joi.string().allow('').optional(),
+  TRANSFORM_S3_FORCE_PATH_STYLE: Joi.boolean().optional().default(false),
+  /** How long a stored file stays downloadable after its upload. */
+  TRANSFORM_STORED_FILE_RETENTION_DAYS: Joi.number()
+    .integer()
+    .min(1)
+    .optional()
+    .default(90),
+  TRANSFORM_UPLOAD_WORKER_ENABLED: Joi.boolean().optional().default(true),
+  TRANSFORM_UPLOAD_INTERVAL_MS: Joi.number()
+    .integer()
+    .min(100)
+    .optional()
+    .default(5000),
+  TRANSFORM_UPLOAD_BATCH_SIZE: Joi.number()
+    .integer()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(10),
+  /** A copy still pending after this long becomes `error` (upload_timeout). */
+  TRANSFORM_UPLOAD_MAX_AGE_MS: Joi.number()
+    .integer()
+    .min(1000)
+    .optional()
+    .default(60 * 60 * 1000),
+  TRANSFORM_STORED_FILE_CLEANUP_ENABLED: Joi.boolean().optional().default(true),
+  TRANSFORM_STORED_FILE_CLEANUP_INTERVAL_MS: Joi.number()
+    .integer()
+    .min(1000)
+    .optional()
+    .default(10 * 60 * 1000),
+  TRANSFORM_STORED_FILE_CLEANUP_BATCH_SIZE: Joi.number()
+    .integer()
+    .min(1)
+    .max(1000)
+    .optional()
+    .default(50),
+
+  /**
    * SMTP options (used to deliver confirmation emails)
    */
   SMTP_HOST: Joi.string().allow('').optional(),

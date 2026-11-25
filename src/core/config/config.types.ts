@@ -126,6 +126,24 @@ export interface Config {
   TRANSFORM_HISTORY_CLEANUP_ENABLED?: boolean;
   TRANSFORM_HISTORY_CLEANUP_INTERVAL_MS?: number;
   TRANSFORM_HISTORY_CLEANUP_BATCH_SIZE?: number;
+  /** Permanent store of saved results: `local` (development) or `s3`. */
+  TRANSFORM_STORAGE_DRIVER?: 'local' | 's3';
+  TRANSFORM_S3_BUCKET?: string;
+  TRANSFORM_S3_REGION?: string;
+  TRANSFORM_S3_ENDPOINT?: string;
+  TRANSFORM_S3_ACCESS_KEY_ID?: string;
+  TRANSFORM_S3_SECRET_ACCESS_KEY?: string;
+  TRANSFORM_S3_FORCE_PATH_STYLE?: boolean;
+  /** Days a stored file stays downloadable after its upload. */
+  TRANSFORM_STORED_FILE_RETENTION_DAYS?: number;
+  TRANSFORM_UPLOAD_WORKER_ENABLED?: boolean;
+  TRANSFORM_UPLOAD_INTERVAL_MS?: number;
+  TRANSFORM_UPLOAD_BATCH_SIZE?: number;
+  /** A copy still pending after this long becomes `error`. */
+  TRANSFORM_UPLOAD_MAX_AGE_MS?: number;
+  TRANSFORM_STORED_FILE_CLEANUP_ENABLED?: boolean;
+  TRANSFORM_STORED_FILE_CLEANUP_INTERVAL_MS?: number;
+  TRANSFORM_STORED_FILE_CLEANUP_BATCH_SIZE?: number;
 
   /**
    * SMTP options (used to deliver confirmation emails)

@@ -432,7 +432,7 @@ describe('Text formats transformation (e2e)', () => {
         upload('json', SAMPLE.rows.csv, [{ field: 'save', value: 'true' }]),
       );
       expect(res.statusCode).toBe(200);
-      expect(res.headers['x-storage-status']).toBe('pending');
+      expect(res.headers['x-save-status']).toBe('pending');
     });
   });
 
@@ -639,8 +639,8 @@ describe('Text formats transformation (e2e)', () => {
 
       expect(res.statusCode).toBe(200);
       expect(res.json()).toEqual(ROWS);
-      expect(res.headers['x-storage-status']).toBe(
-        parts.includes(save) ? 'pending' : 'none',
+      expect(res.headers['x-save-status']).toBe(
+        parts.includes(save) ? 'pending' : 'not_requested',
       );
       const rows = await history(userId);
       expect(rows).toHaveLength(1);

@@ -2,24 +2,31 @@ import { Module } from '@nestjs/common';
 import { TerminusModule } from '@nestjs/terminus';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { ConfigService } from '@/core/config/config.service';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { CsrfGuard } from '@/modules/auth/guards/csrf.guard';
 import { SessionModule } from '@/modules/auth/session.module';
 import { RbacModule } from '@/modules/rbac/rbac.module';
 import { DeletionModule } from '@/modules/users/deletion/deletion.module';
 
+import { AdminStoredFileDownloadController } from './controllers/admin-stored-file-download.controller';
 import { AdminTransformationHistoryController } from './controllers/admin-transformation-history.controller';
+import { StoredFileDownloadController } from './controllers/stored-file-download.controller';
 import { TransformationHistoryController } from './controllers/transformation-history.controller';
 import { Transformation } from './entities/transformation.entity';
-import { TransformationObject } from './entities/transformation-object.entity';
 import { HistoryRateGuard } from './guards/history-rate.guard';
 import { TransformationsReadinessIndicator } from './health/transformations.health';
 import { HistoryQueryPipe } from './pipes/history-query.pipe';
 import { ConverterRegistry } from './services/converter.registry';
 import { HistoryLimiter } from './services/history-limiter.service';
 import { HistoryRetentionWorker } from './services/history-retention.worker';
-import { LocalResultStore } from './services/local-result-store';
-import { RESULT_STORE } from './services/result-store';
+import { LocalObjectStorage } from './services/local-object-storage';
+import { OBJECT_STORAGE } from './services/object-storage';
+import { S3ObjectStorage } from './services/s3-object-storage';
+import { StagingStore } from './services/staging-store';
+import { StoredFileCleaner } from './services/stored-file-cleaner';
+import { StoredFileDownloadService } from './services/stored-file-download.service';
+import { StoredFileWorker } from './services/stored-file.worker';
 import { TempStorageService } from './services/temp-storage.service';
 import { TransformationAuditService } from './services/transformation-audit.service';
 import { TransformationEraser } from './services/transformation-eraser';
@@ -37,7 +44,7 @@ import { TransformationsPolicyService } from './services/transformations-policy.
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Transformation, TransformationObject]),
+    TypeOrmModule.forFeature([Transformation]),
     RbacModule,
     SessionModule,
     AuthModule,
@@ -47,6 +54,8 @@ import { TransformationsPolicyService } from './services/transformations-policy.
   controllers: [
     TransformationHistoryController,
     AdminTransformationHistoryController,
+    StoredFileDownloadController,
+    AdminStoredFileDownloadController,
   ],
   providers: [
     ConverterRegistry,
@@ -63,7 +72,18 @@ import { TransformationsPolicyService } from './services/transformations-policy.
     TransformationsPolicyService,
     TransformationEraser,
     TransformationsReadinessIndicator,
-    { provide: RESULT_STORE, useClass: LocalResultStore },
+    StagingStore,
+    StoredFileCleaner,
+    StoredFileDownloadService,
+    StoredFileWorker,
+    {
+      provide: OBJECT_STORAGE,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) =>
+        config.get('TRANSFORM_STORAGE_DRIVER') === 's3'
+          ? new S3ObjectStorage(config)
+          : new LocalObjectStorage(config),
+    },
   ],
   exports: [
     ConverterRegistry,

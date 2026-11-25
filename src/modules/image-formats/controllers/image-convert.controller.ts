@@ -169,7 +169,7 @@ export class ImageConvertController {
       .header('x-content-type-options', 'nosniff')
       .header('cache-control', 'no-store')
       .header('x-transformation-id', result.transformationId)
-      .header('x-storage-status', result.storageStatus ?? 'none')
+      .header('x-save-status', result.saveStatus)
       .send(result.stream);
   }
 
